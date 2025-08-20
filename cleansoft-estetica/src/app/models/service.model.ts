@@ -1,0 +1,40 @@
+export interface Service {
+  id: number;
+  name: string;
+  description: string;
+  category: ServiceCategory;
+  basePrice: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  additionalServices?: AdditionalService[];
+}
+
+export enum ServiceCategory {
+  SIMPLE = 'simple',
+  DETAILED = 'detailed',
+  TECHNICAL = 'technical'
+}
+
+export interface AdditionalService {
+  id: number;
+  serviceId: number;
+  name: string;
+  description: string;
+  additionalPrice: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ServiceSearchParams {
+  name?: string;
+  category?: ServiceCategory;
+  isActive?: boolean;
+}
+
+export interface ServiceWithTotal {
+  service: Service;
+  totalPrice: number;
+  additionalServices: AdditionalService[];
+}
