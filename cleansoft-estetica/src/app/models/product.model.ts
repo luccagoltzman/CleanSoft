@@ -1,3 +1,17 @@
+export interface Supplier {
+  id: number;
+  name: string;
+  document: string; // CPF ou CNPJ
+  documentType: 'CPF' | 'CNPJ';
+  contact: string;
+  address: string;
+  phone: string;
+  email: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Product {
   id: number;
   category: string;
@@ -13,20 +27,6 @@ export interface Product {
   createdAt: Date;
   updatedAt: Date;
   supplier?: Supplier;
-}
-
-export interface Supplier {
-  id: number;
-  name: string;
-  document: string; // CPF ou CNPJ
-  documentType: 'CPF' | 'CNPJ';
-  contact: string;
-  address: string;
-  phone: string;
-  email: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface StockMovement {

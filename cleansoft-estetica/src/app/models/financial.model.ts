@@ -1,3 +1,7 @@
+import { Customer } from './customer.model';
+import { Sale } from './sale.model';
+import { Supplier } from './product.model';
+
 export interface AccountPayable {
   id: number;
   supplierId: number;

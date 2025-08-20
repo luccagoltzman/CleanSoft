@@ -1,3 +1,8 @@
+import { Customer } from './customer.model';
+import { Vehicle } from './customer.model';
+import { Product } from './product.model';
+import { Service } from './service.model';
+
 export interface Sale {
   id: number;
   customerId: number;
