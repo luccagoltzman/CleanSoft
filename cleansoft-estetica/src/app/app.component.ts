@@ -1,13 +1,32 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { User } from './models';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'cleansoft-estetica';
+  title = 'CleanSoft Estética';
+  sidebarCollapsed = false;
+  showUserMenu = false;
+  currentUser: User | null = null;
+
+  toggleSidebar() {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+  }
+
+  toggleUserMenu() {
+    this.showUserMenu = !this.showUserMenu;
+  }
+
+  logout() {
+    // Implementar lógica de logout
+    console.log('Logout realizado');
+    this.showUserMenu = false;
+  }
 }

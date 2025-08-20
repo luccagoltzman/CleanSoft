@@ -1,0 +1,109 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Dashboard</h1>
+    <p>Visão geral do sistema CleanSoft Estética</p>
+  </div>
+
+  <!-- Cards de Estatísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon customers">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.totalCustomers }}</h3>
+        <p>Total de Clientes</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon vehicles">
+        <i class="fas fa-car"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.totalVehicles }}</h3>
+        <p>Total de Veículos</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon sales">
+        <i class="fas fa-shopping-cart"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.totalSales }}</h3>
+        <p>Vendas do Mês</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon revenue">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-content">
+        <h3>R$ {{ stats.totalRevenue.toFixed(2) }}</h3>
+        <p>Receita do Mês</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon services">
+        <i class="fas fa-tools"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.pendingServices }}</h3>
+        <p>Serviços Pendentes</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stock">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.lowStockProducts }}</h3>
+        <p>Produtos em Falta</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seções de Informações -->
+  <div class="info-sections">
+    <div class="info-card">
+      <div class="card-header">
+        <h3>Vendas Recentes</h3>
+        <a href="/sales" class="view-all">Ver Todas</a>
+      </div>
+      <div class="card-content">
+        <div class="sale-item" *ngFor="let sale of recentSales">
+          <div class="sale-info">
+            <strong>{{ sale.customer }}</strong>
+            <span class="vehicle">{{ sale.vehicle }}</span>
+          </div>
+          <div class="sale-details">
+            <span class="amount">R$ {{ sale.total.toFixed(2) }}</span>
+            <span class="status" [class]="sale.status.toLowerCase()">{{ sale.status }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="card-header">
+        <h3>Produtos com Estoque Baixo</h3>
+        <a href="/products" class="view-all">Ver Todos</a>
+      </div>
+      <div class="card-content">
+        <div class="stock-item" *ngFor="let product of lowStockProducts">
+          <div class="product-info">
+            <strong>{{ product.name }}</strong>
+            <span class="stock-warning">Estoque: {{ product.currentStock }}/{{ product.minimumStock }}</span>
+          </div>
+          <div class="stock-status">
+            <span class="status low">Baixo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
