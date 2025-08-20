@@ -1,0 +1,328 @@
+<div class="customers-container">
+  <!-- Header da Página -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Gestão de Clientes</h1>
+      <button class="btn-primary" (click)="createCustomer()">
+        <i class="fas fa-plus"></i>
+        Novo Cliente
+      </button>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.total }}</h3>
+        <p>Total de Clientes</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active">
+        <i class="fas fa-user-check"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.active }}</h3>
+        <p>Clientes Ativos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon inactive">
+        <i class="fas fa-user-times"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.inactive }}</h3>
+        <p>Clientes Inativos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon vehicles">
+        <i class="fas fa-car"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.withVehicles }}</h3>
+        <p>Com Veículos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros e Busca -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        placeholder="Buscar por nome, telefone, documento ou email..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+        class="search-input"
+      >
+    </div>
+    
+    <div class="filter-controls">
+      <select 
+        [(ngModel)]="documentTypeFilter" 
+        (change)="onDocumentTypeFilterChange()"
+        class="filter-select"
+      >
+        <option value="all">Todos os Documentos</option>
+        <option value="CPF">CPF</option>
+        <option value="CNPJ">CNPJ</option>
+      </select>
+      
+      <select 
+        [(ngModel)]="statusFilter" 
+        (change)="onStatusFilterChange()"
+        class="filter-select"
+      >
+        <option value="all">Todos os Status</option>
+        <option value="active">Ativos</option>
+        <option value="inactive">Inativos</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabela de Clientes -->
+  <div class="table-container">
+    <table class="customers-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Telefone</th>
+          <th>Email</th>
+          <th>Documento</th>
+          <th>Veículos</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let customer of filteredCustomers" class="customer-row">
+          <td>
+            <div class="customer-info">
+              <strong>{{ customer.name }}</strong>
+              <small *ngIf="customer.observations">{{ customer.observations }}</small>
+            </div>
+          </td>
+          <td>{{ customer.phone }}</td>
+          <td>{{ customer.email }}</td>
+          <td>
+            <span class="document-badge" [class]="customer.documentType.toLowerCase()">
+              {{ formatDocument(customer.document, customer.documentType) }}
+            </span>
+          </td>
+          <td>
+            <span class="vehicles-count">
+              {{ customer.vehicles.length }} veículo{{ customer.vehicles.length !== 1 ? 's' : '' }}
+            </span>
+          </td>
+          <td>
+            <span class="status-badge" [class]="customer.isActive ? 'active' : 'inactive'">
+              {{ customer.isActive ? 'Ativo' : 'Inativo' }}
+            </span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-icon" (click)="viewCustomer(customer)" title="Visualizar">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="btn-icon" (click)="editCustomer(customer)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button 
+                class="btn-icon" 
+                [class]="customer.isActive ? 'btn-danger' : 'btn-success'"
+                (click)="toggleCustomerStatus(customer)"
+                [title]="customer.isActive ? 'Desativar' : 'Ativar'"
+              >
+                <i class="fas" [class]="customer.isActive ? 'fa-user-times' : 'fa-user-check'"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div *ngIf="filteredCustomers.length === 0" class="no-results">
+      <i class="fas fa-search"></i>
+      <p>Nenhum cliente encontrado com os filtros aplicados.</p>
+    </div>
+  </div>
+
+  <!-- Formulário de Cliente -->
+  <div *ngIf="showForm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>{{ isCreating ? 'Novo Cliente' : 'Editar Cliente' }}</h2>
+        <button class="btn-close" (click)="closeForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form [formGroup]="customerForm" (ngSubmit)="saveCustomer()" class="customer-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Nome *</label>
+            <input 
+              type="text" 
+              id="name" 
+              formControlName="name" 
+              placeholder="Nome completo ou razão social"
+              class="form-input"
+            >
+            <div *ngIf="customerForm.get('name')?.invalid && customerForm.get('name')?.touched" class="error-message">
+              Nome é obrigatório e deve ter pelo menos 3 caracteres
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="phone">Telefone *</label>
+            <input 
+              type="text" 
+              id="phone" 
+              formControlName="phone" 
+              placeholder="(11) 99999-9999"
+              class="form-input"
+            >
+            <div *ngIf="customerForm.get('phone')?.invalid && customerForm.get('phone')?.touched" class="error-message">
+              Telefone é obrigatório no formato (11) 99999-9999
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input 
+              type="email" 
+              id="email" 
+              formControlName="email" 
+              placeholder="email@exemplo.com"
+              class="form-input"
+            >
+            <div *ngIf="customerForm.get('email')?.invalid && customerForm.get('email')?.touched" class="error-message">
+              Email é obrigatório e deve ser válido
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="documentType">Tipo de Documento *</label>
+            <select id="documentType" formControlName="documentType" class="form-select">
+              <option value="CPF">CPF</option>
+              <option value="CNPJ">CNPJ</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="document">Documento *</label>
+            <input 
+              type="text" 
+              id="document" 
+              formControlName="document" 
+              [placeholder]="getDocumentMask()"
+              class="form-input"
+            >
+            <div *ngIf="customerForm.get('document')?.invalid && customerForm.get('document')?.touched" class="error-message">
+              Documento é obrigatório
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="observations">Observações</label>
+            <textarea 
+              id="observations" 
+              formControlName="observations" 
+              placeholder="Observações adicionais..."
+              class="form-textarea"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="closeForm()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="customerForm.invalid">
+            {{ isCreating ? 'Criar' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Visualização -->
+  <div *ngIf="selectedCustomer && !showForm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Detalhes do Cliente</h2>
+        <button class="btn-close" (click)="selectedCustomer = null">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="customer-details">
+        <div class="detail-row">
+          <label>Nome:</label>
+          <span>{{ selectedCustomer.name }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Telefone:</label>
+          <span>{{ selectedCustomer.phone }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Email:</label>
+          <span>{{ selectedCustomer.email }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Documento:</label>
+          <span class="document-badge" [class]="selectedCustomer.documentType.toLowerCase()">
+            {{ formatDocument(selectedCustomer.document, selectedCustomer.documentType) }}
+          </span>
+        </div>
+        <div class="detail-row" *ngIf="selectedCustomer.observations">
+          <label>Observações:</label>
+          <span>{{ selectedCustomer.observations }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Status:</label>
+          <span class="status-badge" [class]="selectedCustomer.isActive ? 'active' : 'inactive'">
+            {{ selectedCustomer.isActive ? 'Ativo' : 'Inativo' }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <label>Data de Cadastro:</label>
+          <span>{{ selectedCustomer.createdAt | date:'dd/MM/yyyy' }}</span>
+        </div>
+        
+        <div class="vehicles-section" *ngIf="selectedCustomer.vehicles.length > 0">
+          <h3>Veículos ({{ selectedCustomer.vehicles.length }})</h3>
+          <div class="vehicles-list">
+            <div *ngFor="let vehicle of selectedCustomer.vehicles" class="vehicle-item">
+              <div class="vehicle-info">
+                <strong>{{ vehicle.brand }} {{ vehicle.model }}</strong>
+                <span class="license-plate">{{ vehicle.licensePlate }}</span>
+                <span class="vehicle-details">{{ vehicle.year }} - {{ vehicle.color }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="selectedCustomer = null">
+          Fechar
+        </button>
+        <button class="btn-primary" (click)="editCustomer(selectedCustomer)">
+          Editar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
