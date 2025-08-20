@@ -17,6 +17,7 @@ export interface Sale {
   paymentStatus: PaymentStatus;
   installments?: number;
   notes?: string;
+  date: Date; // Data da venda
   createdAt: Date;
   updatedAt: Date;
   createdBy: number; // ID do usuário
@@ -33,6 +34,8 @@ export interface SaleItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  discount: number; // Desconto por item
+  notes?: string; // Observações do item
 }
 
 export enum PaymentMethod {
@@ -57,6 +60,8 @@ export interface SaleSearchParams {
   paymentMethod?: PaymentMethod;
   startDate?: Date;
   endDate?: Date;
+  minTotal?: number; // Valor mínimo da venda
+  maxTotal?: number; // Valor máximo da venda
   createdBy?: number;
 }
 
@@ -64,6 +69,11 @@ export interface SaleReport {
   totalSales: number;
   totalRevenue: number;
   averageTicket: number;
-  salesByPaymentMethod: { method: PaymentMethod; count: number; total: number }[];
-  salesByPeriod: { period: string; count: number; total: number }[];
+  paidSales: number;
+  pendingSales: number;
+  cancelledSales: number;
+  paymentMethodStats: { [key in PaymentMethod]: number };
+  dailyStats: { date: string; sales: number; revenue: number }[];
+  topProducts: { productId: number; quantity: number }[];
+  topServices: { serviceId: number; quantity: number }[];
 }

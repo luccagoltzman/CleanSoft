@@ -1,0 +1,515 @@
+<div class="sales-container">
+  <!-- Header da Página -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Gestão de Vendas</h1>
+      <div class="header-actions">
+        <button class="btn-primary" (click)="createSale()">
+          <i class="fas fa-plus"></i>
+          Nova Venda
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-shopping-cart"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.totalSales }}</h3>
+        <p>Total de Vendas</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon revenue">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ formatCurrency(stats.totalRevenue) }}</h3>
+        <p>Receita Total</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.paidSales }}</h3>
+        <p>Vendas Pagas</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon warning">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.pendingSales }}</h3>
+        <p>Vendas Pendentes</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon info">
+        <i class="fas fa-chart-line"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ formatCurrency(stats.averageTicket) }}</h3>
+        <p>Ticket Médio</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros e Busca -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        placeholder="Buscar por cliente, telefone ou observações..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+        class="search-input"
+      >
+    </div>
+    
+    <div class="filter-controls">
+      <select 
+        [(ngModel)]="customerFilter" 
+        (change)="onCustomerFilterChange()"
+        class="filter-select"
+      >
+        <option value="">Todos os Clientes</option>
+        <option *ngFor="let customer of customers" [value]="customer.id">
+          {{ customer.name }}
+        </option>
+      </select>
+      
+      <select 
+        [(ngModel)]="statusFilter" 
+        (change)="onStatusFilterChange()"
+        class="filter-select"
+      >
+        <option value="all">Todos os Status</option>
+        <option value="paid">Pago</option>
+        <option value="pending">Pendente</option>
+        <option value="cancelled">Cancelado</option>
+      </select>
+      
+      <select 
+        [(ngModel)]="methodFilter" 
+        (change)="onMethodFilterChange()"
+        class="filter-select"
+      >
+        <option value="all">Todos os Métodos</option>
+        <option value="cash">Dinheiro</option>
+        <option value="card">Cartão</option>
+        <option value="pix">PIX</option>
+        <option value="installments">Parcelado</option>
+      </select>
+      
+      <input 
+        type="date" 
+        [(ngModel)]="startDateFilter"
+        (change)="onDateFilterChange()"
+        class="filter-date"
+        placeholder="Data Inicial"
+      >
+      
+      <input 
+        type="date" 
+        [(ngModel)]="endDateFilter"
+        (change)="onDateFilterChange()"
+        class="filter-date"
+        placeholder="Data Final"
+      >
+    </div>
+  </div>
+
+  <!-- Tabela de Vendas -->
+  <div class="table-container">
+    <table class="sales-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Veículo</th>
+          <th>Itens</th>
+          <th>Total</th>
+          <th>Pagamento</th>
+          <th>Status</th>
+          <th>Data</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let sale of filteredSales" class="sale-row">
+          <td>
+            <div class="customer-info">
+              <strong>{{ getCustomerName(sale.customerId) }}</strong>
+            </div>
+          </td>
+                     <td>
+             <span class="vehicle-info">{{ getVehicleInfo(sale.vehicleId || 0) }}</span>
+           </td>
+          <td>
+            <div class="items-info">
+              <div *ngFor="let item of sale.items" class="item">
+                <span *ngIf="item.type === 'product'">
+                  {{ getProductName(item.productId!) }} ({{ item.quantity }}x)
+                </span>
+                <span *ngIf="item.type === 'service'">
+                  {{ getServiceName(item.serviceId!) }} ({{ item.quantity }}x)
+                </span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="total-info">
+              <span class="total">{{ formatCurrency(sale.total) }}</span>
+              <span *ngIf="sale.discount > 0" class="discount">
+                -{{ formatCurrency(sale.discount) }}
+              </span>
+            </div>
+          </td>
+          <td>
+            <span class="payment-method">{{ getPaymentMethodText(sale.paymentMethod) }}</span>
+          </td>
+          <td>
+            <span class="status-badge" [class]="getPaymentStatusClass(sale.paymentStatus)">
+              {{ getPaymentStatusText(sale.paymentStatus) }}
+            </span>
+          </td>
+          <td>
+            <span class="sale-date">{{ formatDate(sale.date) }}</span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-icon" (click)="viewSale(sale)" title="Visualizar">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="btn-icon" (click)="editSale(sale)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button 
+                *ngIf="sale.paymentStatus === 'pending'"
+                class="btn-icon btn-warning" 
+                (click)="cancelSale(sale)"
+                title="Cancelar"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div *ngIf="filteredSales.length === 0" class="no-results">
+      <i class="fas fa-search"></i>
+      <p>Nenhuma venda encontrada com os filtros aplicados.</p>
+    </div>
+  </div>
+
+  <!-- Formulário de Venda -->
+  <div *ngIf="showForm" class="modal-overlay">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2>{{ isCreating ? 'Nova Venda' : 'Editar Venda' }}</h2>
+        <button class="btn-close" (click)="closeForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form [formGroup]="saleForm" (ngSubmit)="saveSale()" class="sale-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customerId">Cliente *</label>
+            <select id="customerId" formControlName="customerId" (change)="onCustomerChange()" class="form-select">
+              <option value="">Selecione um cliente</option>
+              <option *ngFor="let customer of customers" [value]="customer.id">
+                {{ customer.name }} - {{ customer.phone }}
+              </option>
+            </select>
+            <div *ngIf="saleForm.get('customerId')?.invalid && saleForm.get('customerId')?.touched" class="error-message">
+              Cliente é obrigatório
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="vehicleId">Veículo</label>
+            <select id="vehicleId" formControlName="vehicleId" class="form-select">
+              <option value="">Selecione um veículo (opcional)</option>
+              <option *ngFor="let vehicle of getVehiclesByCustomer(saleForm.get('customerId')?.value || 0)" [value]="vehicle.id">
+                {{ vehicle.licensePlate }} - {{ vehicle.brand }} {{ vehicle.model }}
+              </option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="date">Data da Venda *</label>
+            <input 
+              type="date" 
+              id="date" 
+              formControlName="date" 
+              class="form-input"
+            >
+            <div *ngIf="saleForm.get('date')?.invalid && saleForm.get('date')?.touched" class="error-message">
+              Data da venda é obrigatória
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="paymentMethod">Método de Pagamento *</label>
+            <select id="paymentMethod" formControlName="paymentMethod" class="form-select">
+              <option value="">Selecione o método</option>
+              <option *ngFor="let method of paymentMethods" [value]="method">
+                {{ getPaymentMethodText(method) }}
+              </option>
+            </select>
+            <div *ngIf="saleForm.get('paymentMethod')?.invalid && saleForm.get('paymentMethod')?.touched" class="error-message">
+              Método de pagamento é obrigatório
+            </div>
+          </div>
+        </div>
+
+        <!-- Itens da Venda -->
+        <div class="items-section">
+          <div class="section-header">
+            <h3>Itens da Venda</h3>
+            <button type="button" class="btn-secondary" (click)="addItem()">
+              <i class="fas fa-plus"></i>
+              Adicionar Item
+            </button>
+          </div>
+          
+          <div formArrayName="items" class="items-list">
+            <div *ngFor="let item of items.controls; let i = index" [formGroupName]="i" class="item-form">
+              <div class="item-header">
+                <h4>Item {{ i + 1 }}</h4>
+                <button type="button" class="btn-icon btn-danger" (click)="removeItem(i)" *ngIf="items.length > 1">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tipo *</label>
+                  <select formControlName="type" (change)="onItemTypeChange(i)" class="form-select">
+                    <option value="product">Produto</option>
+                    <option value="service">Serviço</option>
+                  </select>
+                </div>
+                
+                <div class="form-group" *ngIf="item.get('type')?.value === 'product'">
+                  <label>Produto *</label>
+                  <select formControlName="productId" (change)="onProductChange(i)" class="form-select">
+                    <option value="">Selecione um produto</option>
+                    <option *ngFor="let product of products" [value]="product.id">
+                      {{ product.name }} - {{ formatCurrency(product.salePrice) }}
+                    </option>
+                  </select>
+                </div>
+                
+                <div class="form-group" *ngIf="item.get('type')?.value === 'service'">
+                  <label>Serviço *</label>
+                  <select formControlName="serviceId" (change)="onServiceChange(i)" class="form-select">
+                    <option value="">Selecione um serviço</option>
+                    <option *ngFor="let service of services" [value]="service.id">
+                      {{ service.name }} - {{ formatCurrency(service.basePrice) }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Quantidade *</label>
+                  <input 
+                    type="number" 
+                    formControlName="quantity" 
+                    class="form-input"
+                    min="1"
+                  >
+                </div>
+                
+                <div class="form-group">
+                  <label>Preço Unitário *</label>
+                  <input 
+                    type="number" 
+                    formControlName="unitPrice" 
+                    class="form-input"
+                    step="0.01"
+                    min="0"
+                  >
+                </div>
+                
+                <div class="form-group">
+                  <label>Desconto</label>
+                  <input 
+                    type="number" 
+                    formControlName="discount" 
+                    class="form-input"
+                    step="0.01"
+                    min="0"
+                  >
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label>Observações</label>
+                <input 
+                  type="text" 
+                  formControlName="notes" 
+                  class="form-input"
+                  placeholder="Observações sobre o item"
+                >
+              </div>
+              
+              <div class="item-total">
+                <strong>Total do Item: {{ formatCurrency(calculateItemTotal(item.value)) }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Totais -->
+        <div class="totals-section">
+          <div class="total-row">
+            <label>Subtotal:</label>
+            <span>{{ formatCurrency(calculateSaleSubtotal()) }}</span>
+          </div>
+          <div class="total-row">
+            <label>Desconto Geral:</label>
+            <input 
+              type="number" 
+              formControlName="discount" 
+              class="form-input discount-input"
+              step="0.01"
+              min="0"
+            >
+          </div>
+          <div class="total-row total">
+            <label>Total:</label>
+            <span>{{ formatCurrency(calculateSaleTotal()) }}</span>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">Observações</label>
+          <textarea 
+            id="notes" 
+            formControlName="notes" 
+            placeholder="Observações sobre a venda"
+            class="form-textarea"
+            rows="2"
+          ></textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="closeForm()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="saleForm.invalid || items.length === 0">
+            {{ isCreating ? 'Criar' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Visualização -->
+  <div *ngIf="selectedSale && !showForm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Detalhes da Venda #{{ selectedSale.id }}</h2>
+        <button class="btn-close" (click)="selectedSale = null">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="sale-details">
+        <div class="detail-row">
+          <label>Cliente:</label>
+          <span>{{ getCustomerName(selectedSale.customerId) }}</span>
+        </div>
+                 <div class="detail-row">
+           <label>Veículo:</label>
+           <span>{{ getVehicleInfo(selectedSale.vehicleId || 0) }}</span>
+         </div>
+        <div class="detail-row">
+          <label>Data da Venda:</label>
+          <span>{{ formatDate(selectedSale.date) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Método de Pagamento:</label>
+          <span>{{ getPaymentMethodText(selectedSale.paymentMethod) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Status:</label>
+          <span class="status-badge" [class]="getPaymentStatusClass(selectedSale.paymentStatus)">
+            {{ getPaymentStatusText(selectedSale.paymentStatus) }}
+          </span>
+        </div>
+        
+        <div class="items-detail">
+          <h4>Itens da Venda</h4>
+          <div *ngFor="let item of selectedSale.items" class="item-detail">
+            <div class="item-info">
+              <span *ngIf="item.type === 'product'">
+                {{ getProductName(item.productId!) }}
+              </span>
+              <span *ngIf="item.type === 'service'">
+                {{ getServiceName(item.serviceId!) }}
+              </span>
+              <span class="item-quantity">({{ item.quantity }}x)</span>
+            </div>
+            <div class="item-price">
+              <span class="unit-price">{{ formatCurrency(item.unitPrice) }} cada</span>
+              <span class="total-price">{{ formatCurrency(item.totalPrice) }}</span>
+              <span *ngIf="item.discount > 0" class="item-discount">
+                -{{ formatCurrency(item.discount) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="detail-row">
+          <label>Subtotal:</label>
+          <span>{{ formatCurrency(selectedSale.subtotal) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Desconto Geral:</label>
+          <span>{{ formatCurrency(selectedSale.discount) }}</span>
+        </div>
+        <div class="detail-row total">
+          <label>Total:</label>
+          <span>{{ formatCurrency(selectedSale.total) }}</span>
+        </div>
+        
+        <div *ngIf="selectedSale.notes" class="detail-row">
+          <label>Observações:</label>
+          <span>{{ selectedSale.notes }}</span>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="selectedSale = null">
+          Fechar
+        </button>
+        <button class="btn-primary" (click)="editSale(selectedSale)">
+          Editar
+        </button>
+        <button 
+          *ngIf="selectedSale.paymentStatus === 'pending'"
+          class="btn-warning" 
+          (click)="cancelSale(selectedSale)"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

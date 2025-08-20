@@ -1,25 +1,463 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
+import { SaleService } from '../../services/sale.service';
+import { CustomerService } from '../../services/customer.service';
+import { VehicleService } from '../../services/vehicle.service';
+import { ProductService } from '../../services/product.service';
+import { ServiceService } from '../../services/service.service';
+import { Sale, SaleItem, PaymentMethod, PaymentStatus, Customer, Vehicle, Product, Service } from '../../models';
+import { Subject, takeUntil, combineLatest } from 'rxjs';
 
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div class="page-container">
-      <h1>Gestão de Vendas</h1>
-      <p>Página em desenvolvimento...</p>
-    </div>
-  `,
-  styles: [`
-    .page-container {
-      padding: 20px;
-      text-align: center;
-    }
-    h1 {
-      color: var(--primary-color);
-      margin-bottom: 20px;
-    }
-  `]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  templateUrl: './sales.component.html',
+  styleUrl: './sales.component.css'
 })
-export class SalesComponent {}
+export class SalesComponent implements OnInit, OnDestroy {
+  sales: Sale[] = [];
+  filteredSales: Sale[] = [];
+  customers: Customer[] = [];
+  vehicles: Vehicle[] = [];
+  products: Product[] = [];
+  services: Service[] = [];
+  selectedSale: Sale | null = null;
+  isEditing = false;
+  isCreating = false;
+  showForm = false;
+  searchTerm = '';
+  customerFilter = '';
+  statusFilter: 'all' | 'paid' | 'pending' | 'cancelled' = 'all';
+  methodFilter: 'all' | 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'installment' = 'all';
+  startDateFilter = '';
+  endDateFilter = '';
+
+  saleForm: FormGroup;
+  
+  stats: {
+    totalSales: number;
+    totalRevenue: number;
+    averageTicket: number;
+    paidSales: number;
+    pendingSales: number;
+    cancelledSales: number;
+  } = {
+    totalSales: 0,
+    totalRevenue: 0,
+    averageTicket: 0,
+    paidSales: 0,
+    pendingSales: 0,
+    cancelledSales: 0
+  };
+
+  paymentMethods = Object.values(PaymentMethod);
+  paymentStatuses = Object.values(PaymentStatus);
+
+  private destroy$ = new Subject<void>();
+
+  constructor(
+    private saleService: SaleService,
+    private customerService: CustomerService,
+    private vehicleService: VehicleService,
+    private productService: ProductService,
+    private serviceService: ServiceService,
+    private fb: FormBuilder
+  ) {
+    this.saleForm = this.fb.group({
+      customerId: ['', Validators.required],
+      vehicleId: [''],
+      items: this.fb.array([]),
+      discount: [0, [Validators.min(0)]],
+      paymentMethod: ['', Validators.required],
+      paymentStatus: [PaymentStatus.PENDING, Validators.required],
+      notes: [''],
+      date: [new Date(), Validators.required]
+    });
+  }
+
+  ngOnInit() {
+    this.loadSales();
+    this.loadCustomers();
+    this.loadVehicles();
+    this.loadProducts();
+    this.loadServices();
+    this.loadStats();
+
+    // Observar mudanças nas vendas
+    this.saleService.getSales()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(sales => {
+        this.sales = sales;
+        this.applyFilters();
+      });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadSales() {
+    this.saleService.getSales()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(sales => {
+        this.sales = sales;
+        this.applyFilters();
+      });
+  }
+
+  loadCustomers() {
+    this.customerService.getCustomers()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(customers => {
+        this.customers = customers;
+      });
+  }
+
+  loadVehicles() {
+    this.vehicleService.getVehicles()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(vehicles => {
+        this.vehicles = vehicles;
+      });
+  }
+
+  loadProducts() {
+    this.productService.getProducts()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(products => {
+        this.products = products;
+      });
+  }
+
+  loadServices() {
+    this.serviceService.getServices()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(services => {
+        this.services = services;
+      });
+  }
+
+  loadStats() {
+    this.saleService.getSalesReport()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(stats => {
+        this.stats = stats;
+      });
+  }
+
+  applyFilters() {
+    let filtered = [...this.sales];
+
+    // Filtro por termo de busca
+    if (this.searchTerm) {
+      filtered = filtered.filter(s => {
+        const customer = this.customers.find(c => c.id === s.customerId);
+        return customer?.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+               customer?.phone.includes(this.searchTerm) ||
+               s.notes?.toLowerCase().includes(this.searchTerm.toLowerCase());
+      });
+    }
+
+    // Filtro por cliente
+    if (this.customerFilter) {
+      filtered = filtered.filter(s => s.customerId === parseInt(this.customerFilter));
+    }
+
+    // Filtro por status
+    if (this.statusFilter !== 'all') {
+      const status = this.statusFilter === 'paid' ? PaymentStatus.PAID : 
+                     this.statusFilter === 'pending' ? PaymentStatus.PENDING : 
+                     PaymentStatus.CANCELLED;
+      filtered = filtered.filter(s => s.paymentStatus === status);
+    }
+
+    // Filtro por método de pagamento
+    if (this.methodFilter !== 'all') {
+      const method = this.methodFilter as PaymentMethod;
+      filtered = filtered.filter(s => s.paymentMethod === method);
+    }
+
+    // Filtro por data
+    if (this.startDateFilter) {
+      const startDate = new Date(this.startDateFilter);
+      filtered = filtered.filter(s => s.date >= startDate);
+    }
+
+    if (this.endDateFilter) {
+      const endDate = new Date(this.endDateFilter);
+      endDate.setHours(23, 59, 59);
+      filtered = filtered.filter(s => s.date <= endDate);
+    }
+
+    this.filteredSales = filtered;
+  }
+
+  onSearchChange() {
+    this.applyFilters();
+  }
+
+  onCustomerFilterChange() {
+    this.applyFilters();
+  }
+
+  onStatusFilterChange() {
+    this.applyFilters();
+  }
+
+  onMethodFilterChange() {
+    this.applyFilters();
+  }
+
+  onDateFilterChange() {
+    this.applyFilters();
+  }
+
+  createSale() {
+    this.isCreating = true;
+    this.isEditing = false;
+    this.selectedSale = null;
+    this.saleForm.reset({
+      paymentStatus: PaymentStatus.PENDING,
+      date: new Date()
+    });
+    this.clearItems();
+    this.addItem();
+    this.showForm = true;
+  }
+
+  editSale(sale: Sale) {
+    this.isEditing = true;
+    this.isCreating = false;
+    this.selectedSale = sale;
+    
+    this.clearItems();
+    sale.items.forEach(item => this.addItem(item));
+    
+    this.saleForm.patchValue({
+      customerId: sale.customerId,
+      vehicleId: sale.vehicleId,
+      discount: sale.discount,
+      paymentMethod: sale.paymentMethod,
+      paymentStatus: sale.paymentStatus,
+      notes: sale.notes,
+      date: sale.date
+    });
+    
+    this.showForm = true;
+  }
+
+  viewSale(sale: Sale) {
+    this.selectedSale = sale;
+    this.showForm = false;
+  }
+
+  saveSale() {
+    if (this.saleForm.valid && this.items.length > 0) {
+      const formValue = this.saleForm.value;
+      const items = this.items.value.map((item: any) => ({
+        saleId: 0, // Será definido pelo serviço
+        type: item.type,
+        productId: item.type === 'product' ? item.productId : undefined,
+        serviceId: item.type === 'service' ? item.serviceId : undefined,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discount || 0,
+        notes: item.notes
+      }));
+
+      const { subtotal, total } = this.saleService.calculateSaleTotal(items, formValue.discount);
+      
+      const saleData = {
+        ...formValue,
+        items,
+        subtotal,
+        total,
+        createdBy: 1 // ID do usuário logado
+      };
+
+      if (this.isCreating) {
+        this.saleService.createSale(saleData).subscribe(() => {
+          this.closeForm();
+          this.loadSales();
+          this.loadStats();
+        });
+      } else if (this.isEditing && this.selectedSale) {
+        this.saleService.updateSale(this.selectedSale.id, saleData).subscribe(() => {
+          this.closeForm();
+          this.loadSales();
+          this.loadStats();
+        });
+      }
+    }
+  }
+
+  closeForm() {
+    this.showForm = false;
+    this.isCreating = false;
+    this.isEditing = false;
+    this.selectedSale = null;
+    this.saleForm.reset();
+    this.clearItems();
+  }
+
+  cancelSale(sale: Sale) {
+    this.saleService.cancelSale(sale.id).subscribe(() => {
+      this.loadSales();
+      this.loadStats();
+    });
+  }
+
+  // Getters para FormArray
+  get items() {
+    return this.saleForm.get('items') as FormArray;
+  }
+
+  addItem(item?: SaleItem) {
+    const itemForm = this.fb.group({
+      type: [item?.type || 'product', Validators.required],
+      productId: [item?.productId || ''],
+      serviceId: [item?.serviceId || ''],
+      quantity: [item?.quantity || 1, [Validators.required, Validators.min(1)]],
+      unitPrice: [item?.unitPrice || 0, [Validators.required, Validators.min(0)]],
+      discount: [item?.discount || 0, [Validators.min(0)]],
+      notes: [item?.notes || '']
+    });
+
+    this.items.push(itemForm);
+  }
+
+  removeItem(index: number) {
+    this.items.removeAt(index);
+  }
+
+  clearItems() {
+    while (this.items.length !== 0) {
+      this.items.removeAt(0);
+    }
+  }
+
+  // Métodos auxiliares
+  getCustomerName(customerId: number): string {
+    const customer = this.customers.find(c => c.id === customerId);
+    return customer ? customer.name : 'N/A';
+  }
+
+  getVehicleInfo(vehicleId: number): string {
+    const vehicle = this.vehicles.find(v => v.id === vehicleId);
+    return vehicle ? `${vehicle.licensePlate} - ${vehicle.brand} ${vehicle.model}` : 'N/A';
+  }
+
+  getProductName(productId: number): string {
+    const product = this.products.find(p => p.id === productId);
+    return product ? product.name : 'N/A';
+  }
+
+  getServiceName(serviceId: number): string {
+    const service = this.services.find(s => s.id === serviceId);
+    return service ? service.name : 'N/A';
+  }
+
+  getPaymentMethodText(method: PaymentMethod): string {
+    switch (method) {
+      case PaymentMethod.CASH: return 'Dinheiro';
+      case PaymentMethod.CREDIT_CARD: return 'Cartão de Crédito';
+      case PaymentMethod.DEBIT_CARD: return 'Cartão de Débito';
+      case PaymentMethod.PIX: return 'PIX';
+      case PaymentMethod.INSTALLMENT: return 'Parcelado';
+      default: return method;
+    }
+  }
+
+  getPaymentStatusText(status: PaymentStatus): string {
+    switch (status) {
+      case PaymentStatus.PAID: return 'Pago';
+      case PaymentStatus.PENDING: return 'Pendente';
+      case PaymentStatus.CANCELLED: return 'Cancelado';
+      case PaymentStatus.REFUNDED: return 'Reembolsado';
+      default: return status;
+    }
+  }
+
+  getPaymentStatusClass(status: PaymentStatus): string {
+    switch (status) {
+      case PaymentStatus.PAID: return 'paid';
+      case PaymentStatus.PENDING: return 'pending';
+      case PaymentStatus.CANCELLED: return 'cancelled';
+      case PaymentStatus.REFUNDED: return 'refunded';
+      default: return '';
+    }
+  }
+
+  formatCurrency(value: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  }
+
+  formatDate(date: Date): string {
+    return new Intl.DateTimeFormat('pt-BR').format(date);
+  }
+
+  // Métodos para cálculo de totais
+  calculateItemTotal(item: any): number {
+    const subtotal = item.quantity * item.unitPrice;
+    return subtotal - (item.discount || 0);
+  }
+
+  calculateSaleSubtotal(): number {
+    return this.items.value.reduce((sum: number, item: any) => {
+      return sum + this.calculateItemTotal(item);
+    }, 0);
+  }
+
+  calculateSaleTotal(): number {
+    const subtotal = this.calculateSaleSubtotal();
+    const discount = this.saleForm.get('discount')?.value || 0;
+    return subtotal - discount;
+  }
+
+  // Métodos para seleção de produtos/serviços
+  onItemTypeChange(index: number) {
+    const item = this.items.at(index);
+    const type = item.get('type')?.value;
+    
+    if (type === 'product') {
+      item.patchValue({ serviceId: '' });
+    } else {
+      item.patchValue({ productId: '' });
+    }
+  }
+
+  onProductChange(index: number) {
+    const item = this.items.at(index);
+    const productId = item.get('productId')?.value;
+    const product = this.products.find(p => p.id === productId);
+    
+    if (product) {
+      item.patchValue({ unitPrice: product.salePrice });
+    }
+  }
+
+  onServiceChange(index: number) {
+    const item = this.items.at(index);
+    const serviceId = item.get('serviceId')?.value;
+    const service = this.services.find(s => s.id === serviceId);
+    
+    if (service) {
+      item.patchValue({ unitPrice: service.basePrice });
+    }
+  }
+
+  // Filtros para veículos por cliente
+  getVehiclesByCustomer(customerId: number): Vehicle[] {
+    return this.vehicles.filter(v => v.customerId === customerId);
+  }
+
+  onCustomerChange() {
+    this.saleForm.patchValue({ vehicleId: '' });
+  }
+}
