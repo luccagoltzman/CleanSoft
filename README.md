@@ -9,7 +9,7 @@
 
 **Sistema completo de gestão empresarial para lavanderias automotivas e centros de estética automotiva**
 
-[![GitHub stars](https://img.shields.io/github/stars/cleansoft/cleansoft?style=social)](https://github.com/cleansoft/cleansoft)
+[![GitHub stars](https://img.shields.io/github.com/luccagoltzman/CleanSoft.git)](https://github.com/luccagoltzman/CleanSoft.git)
 [![GitHub forks](https://img.shields.io/github/forks/cleansoft/cleansoft?style=social)](https://github.com/cleansoft/cleansoft)
 [![GitHub issues](https://img.shields.io/github/issues/cleansoft/cleansoft)](https://github.com/cleansoft/cleansoft/issues)
 [![GitHub license](https://img.shields.io/github/license/cleansoft/cleansoft)](https://github.com/cleansoft/cleansoft/blob/main/LICENSE)
