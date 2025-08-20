@@ -1,0 +1,403 @@
+<div class="employees-container">
+  <!-- Header da Página -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Gestão de Funcionários</h1>
+      <button class="btn-primary" (click)="createEmployee()">
+        <i class="fas fa-plus"></i>
+        Novo Funcionário
+      </button>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.total }}</h3>
+        <p>Total de Funcionários</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active">
+        <i class="fas fa-user-check"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.active }}</h3>
+        <p>Funcionários Ativos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon inactive">
+        <i class="fas fa-user-times"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.inactive }}</h3>
+        <p>Funcionários Inativos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon salary">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ formatCurrency(stats.totalSalary) }}</h3>
+        <p>Folha Salarial Total</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros e Busca -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        placeholder="Buscar por nome, CPF ou cargo..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+        class="search-input"
+      >
+    </div>
+    
+    <div class="filter-controls">
+      <select 
+        [(ngModel)]="positionFilter" 
+        (change)="onPositionFilterChange()"
+        class="filter-select"
+      >
+        <option value="">Todos os Cargos</option>
+        <option *ngFor="let position of availablePositions" [value]="position">{{ position }}</option>
+      </select>
+      
+      <select 
+        [(ngModel)]="statusFilter" 
+        (change)="onStatusFilterChange()"
+        class="filter-select"
+      >
+        <option value="all">Todos os Status</option>
+        <option value="active">Ativos</option>
+        <option value="inactive">Inativos</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabela de Funcionários -->
+  <div class="table-container">
+    <table class="employees-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>CPF</th>
+          <th>Cargo</th>
+          <th>Telefone</th>
+          <th>Salário</th>
+          <th>Admissão</th>
+          <th>Tempo de Serviço</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let employee of filteredEmployees" class="employee-row">
+          <td>
+            <div class="employee-info">
+              <strong>{{ employee.name }}</strong>
+            </div>
+          </td>
+          <td>
+            <span class="cpf-badge">{{ formatCpf(employee.cpf) }}</span>
+          </td>
+          <td>
+            <span class="position-badge">{{ employee.position }}</span>
+          </td>
+          <td>{{ formatPhone(employee.phone) }}</td>
+          <td>
+            <span class="salary">{{ formatCurrency(employee.salary) }}</span>
+          </td>
+          <td>{{ formatDate(employee.admissionDate) }}</td>
+          <td>
+            <span class="service-time">{{ getServiceTime(employee) }}</span>
+          </td>
+          <td>
+            <span class="status-badge" [class]="getStatusBadgeClass(employee)">
+              {{ getStatusText(employee) }}
+            </span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-icon" (click)="viewEmployee(employee)" title="Visualizar">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="btn-icon" (click)="editEmployee(employee)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button 
+                *ngIf="employee.isActive"
+                class="btn-icon btn-warning" 
+                (click)="showDismissalModal(employee)"
+                title="Demitir"
+              >
+                <i class="fas fa-user-times"></i>
+              </button>
+              <button 
+                *ngIf="!employee.isActive"
+                class="btn-icon btn-success" 
+                (click)="activateEmployee(employee)"
+                title="Recontratar"
+              >
+                <i class="fas fa-user-check"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div *ngIf="filteredEmployees.length === 0" class="no-results">
+      <i class="fas fa-search"></i>
+      <p>Nenhum funcionário encontrado com os filtros aplicados.</p>
+    </div>
+  </div>
+
+  <!-- Formulário de Funcionário -->
+  <div *ngIf="showForm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>{{ isCreating ? 'Novo Funcionário' : 'Editar Funcionário' }}</h2>
+        <button class="btn-close" (click)="closeForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form [formGroup]="employeeForm" (ngSubmit)="saveEmployee()" class="employee-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Nome *</label>
+            <input 
+              type="text" 
+              id="name" 
+              formControlName="name" 
+              placeholder="Nome completo"
+              class="form-input"
+            >
+            <div *ngIf="employeeForm.get('name')?.invalid && employeeForm.get('name')?.touched" class="error-message">
+              Nome é obrigatório e deve ter pelo menos 3 caracteres
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="cpf">CPF *</label>
+            <input 
+              type="text" 
+              id="cpf" 
+              formControlName="cpf" 
+              placeholder="000.000.000-00"
+              class="form-input"
+              maxlength="14"
+            >
+            <div *ngIf="employeeForm.get('cpf')?.invalid && employeeForm.get('cpf')?.touched" class="error-message">
+              CPF é obrigatório no formato 000.000.000-00
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="position">Cargo *</label>
+            <select id="position" formControlName="position" class="form-select">
+              <option value="">Selecione um cargo</option>
+              <option *ngFor="let position of getPositions()" [value]="position">{{ position }}</option>
+            </select>
+            <div *ngIf="employeeForm.get('position')?.invalid && employeeForm.get('position')?.touched" class="error-message">
+              Cargo é obrigatório
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="phone">Telefone *</label>
+            <input 
+              type="text" 
+              id="phone" 
+              formControlName="phone" 
+              placeholder="(11) 99999-9999"
+              class="form-input"
+            >
+            <div *ngIf="employeeForm.get('phone')?.invalid && employeeForm.get('phone')?.touched" class="error-message">
+              Telefone é obrigatório no formato (11) 99999-9999
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="salary">Salário *</label>
+            <input 
+              type="number" 
+              id="salary" 
+              formControlName="salary" 
+              placeholder="0.00"
+              class="form-input"
+              step="0.01"
+              min="0"
+            >
+            <div *ngIf="employeeForm.get('salary')?.invalid && employeeForm.get('salary')?.touched" class="error-message">
+              Salário é obrigatório e deve ser maior que zero
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="admissionDate">Data de Admissão *</label>
+            <input 
+              type="date" 
+              id="admissionDate" 
+              formControlName="admissionDate" 
+              class="form-input"
+            >
+            <div *ngIf="employeeForm.get('admissionDate')?.invalid && employeeForm.get('admissionDate')?.touched" class="error-message">
+              Data de admissão é obrigatória
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="closeForm()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="employeeForm.invalid">
+            {{ isCreating ? 'Criar' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Demissão -->
+  <div *ngIf="showDismissalForm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Demitir Funcionário</h2>
+        <button class="btn-close" (click)="closeDismissalForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="dismissal-content">
+        <p><strong>Funcionário:</strong> {{ selectedEmployee?.name }}</p>
+        <p><strong>Cargo:</strong> {{ selectedEmployee?.position }}</p>
+        <p><strong>Data de Admissão:</strong> {{ selectedEmployee ? formatDate(selectedEmployee.admissionDate) : '' }}</p>
+        
+        <form [formGroup]="dismissalForm" (ngSubmit)="dismissEmployee()" class="dismissal-form">
+          <div class="form-group">
+            <label for="dismissalDate">Data de Demissão *</label>
+            <input 
+              type="date" 
+              id="dismissalDate" 
+              formControlName="dismissalDate" 
+              class="form-input"
+            >
+            <div *ngIf="dismissalForm.get('dismissalDate')?.invalid && dismissalForm.get('dismissalDate')?.touched" class="error-message">
+              Data de demissão é obrigatória
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="closeDismissalForm()">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-warning" [disabled]="dismissalForm.invalid">
+              Confirmar Demissão
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Visualização -->
+  <div *ngIf="selectedEmployee && !showForm && !showDismissalForm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Detalhes do Funcionário</h2>
+        <button class="btn-close" (click)="selectedEmployee = null">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="employee-details">
+        <div class="detail-row">
+          <label>Nome:</label>
+          <span>{{ selectedEmployee.name }}</span>
+        </div>
+        <div class="detail-row">
+          <label>CPF:</label>
+          <span class="cpf-badge">{{ formatCpf(selectedEmployee.cpf) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Cargo:</label>
+          <span class="position-badge">{{ selectedEmployee.position }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Telefone:</label>
+          <span>{{ formatPhone(selectedEmployee.phone) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Salário:</label>
+          <span class="salary">{{ formatCurrency(selectedEmployee.salary) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Data de Admissão:</label>
+          <span>{{ formatDate(selectedEmployee.admissionDate) }}</span>
+        </div>
+        <div class="detail-row" *ngIf="selectedEmployee.dismissalDate">
+          <label>Data de Demissão:</label>
+          <span>{{ formatDate(selectedEmployee.dismissalDate) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Tempo de Serviço:</label>
+          <span class="service-time">{{ getServiceTime(selectedEmployee) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Status:</label>
+          <span class="status-badge" [class]="getStatusBadgeClass(selectedEmployee)">
+            {{ getStatusText(selectedEmployee) }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <label>Data de Cadastro:</label>
+          <span>{{ formatDate(selectedEmployee.createdAt) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Última Atualização:</label>
+          <span>{{ formatDate(selectedEmployee.updatedAt) }}</span>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="selectedEmployee = null">
+          Fechar
+        </button>
+        <button class="btn-primary" (click)="editEmployee(selectedEmployee)">
+          Editar
+        </button>
+        <button 
+          *ngIf="selectedEmployee.isActive"
+          class="btn-warning" 
+          (click)="showDismissalModal(selectedEmployee)"
+        >
+          Demitir
+        </button>
+        <button 
+          *ngIf="!selectedEmployee.isActive"
+          class="btn-success" 
+          (click)="activateEmployee(selectedEmployee)"
+        >
+          Recontratar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
