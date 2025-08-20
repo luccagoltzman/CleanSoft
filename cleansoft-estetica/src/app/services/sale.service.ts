@@ -206,6 +206,8 @@ export class SaleService {
       [PaymentMethod.CREDIT_CARD]: 0,
       [PaymentMethod.DEBIT_CARD]: 0,
       [PaymentMethod.PIX]: 0,
+      [PaymentMethod.BANK_TRANSFER]: 0,
+      [PaymentMethod.CHECK]: 0,
       [PaymentMethod.INSTALLMENT]: 0
     };
 

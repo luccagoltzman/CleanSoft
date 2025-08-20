@@ -30,7 +30,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   searchTerm = '';
   customerFilter = '';
   statusFilter: 'all' | 'paid' | 'pending' | 'cancelled' = 'all';
-  methodFilter: 'all' | 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'installment' = 'all';
+  methodFilter: 'all' | 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'bank_transfer' | 'check' | 'installment' = 'all';
   startDateFilter = '';
   endDateFilter = '';
 
@@ -366,6 +366,8 @@ export class SalesComponent implements OnInit, OnDestroy {
       case PaymentMethod.CREDIT_CARD: return 'Cartão de Crédito';
       case PaymentMethod.DEBIT_CARD: return 'Cartão de Débito';
       case PaymentMethod.PIX: return 'PIX';
+      case PaymentMethod.BANK_TRANSFER: return 'Transferência Bancária';
+      case PaymentMethod.CHECK: return 'Cheque';
       case PaymentMethod.INSTALLMENT: return 'Parcelado';
       default: return method;
     }

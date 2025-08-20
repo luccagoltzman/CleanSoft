@@ -1,3 +1,6 @@
+// Modelos comuns (enums compartilhados)
+export * from './common.model';
+
 // Usuários e Autenticação
 export * from './user.model';
 
@@ -18,3 +21,6 @@ export * from './sale.model';
 
 // Financeiro
 export * from './financial.model';
+
+// Relatórios
+export * from './report.model';

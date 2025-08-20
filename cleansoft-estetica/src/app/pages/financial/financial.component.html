@@ -1,0 +1,796 @@
+<div class="financial-container">
+  <!-- Header da Página -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Gestão Financeira</h1>
+      <div class="header-actions">
+        <button 
+          *ngIf="activeTab === 'payables'" 
+          class="btn-primary" 
+          (click)="createAccountPayable()"
+        >
+          <i class="fas fa-plus"></i>
+          Nova Conta a Pagar
+        </button>
+        <button 
+          *ngIf="activeTab === 'receivables'" 
+          class="btn-primary" 
+          (click)="createAccountReceivable()"
+        >
+          <i class="fas fa-plus"></i>
+          Nova Conta a Receber
+        </button>
+        <button 
+          *ngIf="activeTab === 'movements'" 
+          class="btn-primary" 
+          (click)="createCashMovement()"
+        >
+          <i class="fas fa-plus"></i>
+          Nova Movimentação
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegação por Abas -->
+  <div class="tabs-navigation">
+    <button 
+      class="tab-button" 
+      [class.active]="activeTab === 'overview'"
+      (click)="setActiveTab('overview')"
+    >
+      <i class="fas fa-chart-pie"></i>
+      Visão Geral
+    </button>
+    <button 
+      class="tab-button" 
+      [class.active]="activeTab === 'payables'"
+      (click)="setActiveTab('payables')"
+    >
+      <i class="fas fa-credit-card"></i>
+      Contas a Pagar
+    </button>
+    <button 
+      class="tab-button" 
+      [class.active]="activeTab === 'receivables'"
+      (click)="setActiveTab('receivables')"
+    >
+      <i class="fas fa-money-bill-wave"></i>
+      Contas a Receber
+    </button>
+    <button 
+      class="tab-button" 
+      [class.active]="activeTab === 'movements'"
+      (click)="setActiveTab('movements')"
+    >
+      <i class="fas fa-exchange-alt"></i>
+      Movimentações
+    </button>
+    <button 
+      class="tab-button" 
+      [class.active]="activeTab === 'reports'"
+      (click)="setActiveTab('reports')"
+    >
+      <i class="fas fa-file-alt"></i>
+      Relatórios
+    </button>
+  </div>
+
+  <!-- Conteúdo das Abas -->
+  <div class="tab-content">
+    
+    <!-- Visão Geral -->
+    <div *ngIf="activeTab === 'overview'" class="overview-tab">
+      <!-- Estatísticas -->
+      <div class="stats-section">
+        <div class="stat-card">
+          <div class="stat-icon warning">
+            <i class="fas fa-credit-card"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{ formatCurrency(stats.totalPayables) }}</h3>
+            <p>Total a Pagar</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon danger">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{ formatCurrency(stats.overduePayables) }}</h3>
+            <p>Vencidas</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon success">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{ formatCurrency(stats.totalReceivables) }}</h3>
+            <p>Total a Receber</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon danger">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{ formatCurrency(stats.overdueReceivables) }}</h3>
+            <p>Vencidas</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon success">
+            <i class="fas fa-arrow-up"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{ formatCurrency(stats.totalIncome) }}</h3>
+            <p>Receitas</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon danger">
+            <i class="fas fa-arrow-down"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{ formatCurrency(stats.totalExpense) }}</h3>
+            <p>Despesas</p>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon" [class]="stats.netCashFlow >= 0 ? 'success' : 'danger'">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="stat-content">
+            <h3>{{ formatCurrency(stats.netCashFlow) }}</h3>
+            <p>Fluxo de Caixa</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumo Rápido -->
+      <div class="quick-summary">
+        <div class="summary-section">
+          <h3>Contas Vencendo em Breve</h3>
+          <div class="summary-list">
+            <div *ngFor="let account of accountsPayable.slice(0, 5)" class="summary-item">
+              <span class="item-title">{{ account.description }}</span>
+              <span class="item-amount">{{ formatCurrency(account.amount) }}</span>
+              <span class="item-date" [class.overdue]="isOverdue(account.dueDate)">
+                {{ formatDate(account.dueDate) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="summary-section">
+          <h3>Últimas Movimentações</h3>
+          <div class="summary-list">
+            <div *ngFor="let movement of cashMovements.slice(0, 5)" class="summary-item">
+              <span class="item-title">{{ movement.description }}</span>
+              <span class="item-amount" [class]="getMovementTypeClass(movement.type)">
+                {{ getMovementTypeText(movement.type) }}: {{ formatCurrency(movement.amount) }}
+              </span>
+              <span class="item-date">{{ formatDate(movement.date) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contas a Pagar -->
+    <div *ngIf="activeTab === 'payables'" class="payables-tab">
+      <!-- Filtros -->
+      <div class="filters-section">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            placeholder="Buscar por descrição ou fornecedor..."
+            [(ngModel)]="searchTerm"
+            class="search-input"
+          >
+        </div>
+        
+        <div class="filter-controls">
+          <select [(ngModel)]="statusFilter" class="filter-select">
+            <option value="all">Todos os Status</option>
+            <option value="pending">Pendente</option>
+            <option value="paid">Pago</option>
+            <option value="overdue">Vencido</option>
+            <option value="cancelled">Cancelado</option>
+          </select>
+          
+          <input 
+            type="date" 
+            [(ngModel)]="startDateFilter"
+            class="filter-date"
+            placeholder="Data Inicial"
+          >
+          
+          <input 
+            type="date" 
+            [(ngModel)]="endDateFilter"
+            class="filter-date"
+            placeholder="Data Final"
+          >
+          
+          <button class="btn-secondary" (click)="applyFilters()">
+            <i class="fas fa-filter"></i>
+            Filtrar
+          </button>
+          
+          <button class="btn-secondary" (click)="clearFilters()">
+            <i class="fas fa-times"></i>
+            Limpar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Fornecedor</th>
+              <th>Valor</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let account of accountsPayable" class="data-row">
+              <td>{{ account.description }}</td>
+              <td>{{ account.supplierId }}</td>
+              <td>{{ formatCurrency(account.amount) }}</td>
+              <td [class.overdue]="isOverdue(account.dueDate)">
+                {{ formatDate(account.dueDate) }}
+              </td>
+              <td>
+                <span class="status-badge" [class]="getStatusClass(account.status)">
+                  {{ getStatusText(account.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-icon" (click)="editAccountPayable(account)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button 
+                    *ngIf="account.status === 'pending'"
+                    class="btn-icon btn-success" 
+                    (click)="payAccountPayable(account)"
+                    title="Marcar como Pago"
+                  >
+                    <i class="fas fa-check"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Contas a Receber -->
+    <div *ngIf="activeTab === 'receivables'" class="receivables-tab">
+      <!-- Filtros -->
+      <div class="filters-section">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            placeholder="Buscar por descrição ou cliente..."
+            [(ngModel)]="searchTerm"
+            class="search-input"
+          >
+        </div>
+        
+        <div class="filter-controls">
+          <select [(ngModel)]="statusFilter" class="filter-select">
+            <option value="all">Todos os Status</option>
+            <option value="pending">Pendente</option>
+            <option value="paid">Pago</option>
+            <option value="overdue">Vencido</option>
+            <option value="cancelled">Cancelado</option>
+          </select>
+          
+          <input 
+            type="date" 
+            [(ngModel)]="startDateFilter"
+            class="filter-date"
+            placeholder="Data Inicial"
+          >
+          
+          <input 
+            type="date" 
+            [(ngModel)]="endDateFilter"
+            class="filter-date"
+            placeholder="Data Final"
+          >
+          
+          <button class="btn-secondary" (click)="applyFilters()">
+            <i class="fas fa-filter"></i>
+            Filtrar
+          </button>
+          
+          <button class="btn-secondary" (click)="clearFilters()">
+            <i class="fas fa-times"></i>
+            Limpar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Cliente</th>
+              <th>Valor</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let account of accountsReceivable" class="data-row">
+              <td>{{ account.description }}</td>
+              <td>{{ account.customerId }}</td>
+              <td>{{ formatCurrency(account.amount) }}</td>
+              <td [class.overdue]="isOverdue(account.dueDate)">
+                {{ formatDate(account.dueDate) }}
+              </td>
+              <td>
+                <span class="status-badge" [class]="getStatusClass(account.status)">
+                  {{ getStatusText(account.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-icon" (click)="editAccountReceivable(account)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button 
+                    *ngIf="account.status === 'pending'"
+                    class="btn-icon btn-success" 
+                    (click)="receiveAccountReceivable(account)"
+                    title="Marcar como Recebido"
+                  >
+                    <i class="fas fa-check"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Movimentações de Caixa -->
+    <div *ngIf="activeTab === 'movements'" class="movements-tab">
+      <!-- Filtros -->
+      <div class="filters-section">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            placeholder="Buscar por descrição..."
+            [(ngModel)]="searchTerm"
+            class="search-input"
+          >
+        </div>
+        
+        <div class="filter-controls">
+          <select [(ngModel)]="categoryFilter" class="filter-select">
+            <option value="all">Todas as Categorias</option>
+            <option *ngFor="let category of cashMovementCategories" [value]="category">
+              {{ getCategoryText(category) }}
+            </option>
+          </select>
+          
+          <input 
+            type="date" 
+            [(ngModel)]="startDateFilter"
+            class="filter-date"
+            placeholder="Data Inicial"
+          >
+          
+          <input 
+            type="date" 
+            [(ngModel)]="endDateFilter"
+            class="filter-date"
+            placeholder="Data Final"
+          >
+          
+          <button class="btn-secondary" (click)="applyFilters()">
+            <i class="fas fa-filter"></i>
+            Filtrar
+          </button>
+          
+          <button class="btn-secondary" (click)="clearFilters()">
+            <i class="fas fa-times"></i>
+            Limpar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Categoria</th>
+              <th>Descrição</th>
+              <th>Valor</th>
+              <th>Data</th>
+              <th>Método</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let movement of cashMovements" class="data-row">
+              <td>
+                <span class="type-badge" [class]="getMovementTypeClass(movement.type)">
+                  {{ getMovementTypeText(movement.type) }}
+                </span>
+              </td>
+              <td>{{ getCategoryText(movement.category) }}</td>
+              <td>{{ movement.description }}</td>
+              <td>{{ formatCurrency(movement.amount) }}</td>
+              <td>{{ formatDate(movement.date) }}</td>
+              <td>{{ movement.paymentMethod ? getPaymentMethodText(movement.paymentMethod) : '-' }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-icon" (click)="editCashMovement(movement)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Relatórios -->
+    <div *ngIf="activeTab === 'reports'" class="reports-tab">
+      <!-- Controles de Relatório -->
+      <div class="report-controls">
+        <div class="control-group">
+          <label>Período:</label>
+          <select [(ngModel)]="reportPeriod" (change)="onReportPeriodChange()" class="form-select">
+            <option value="daily">Diário (7 dias)</option>
+            <option value="weekly">Semanal (4 semanas)</option>
+            <option value="monthly">Mensal (12 meses)</option>
+          </select>
+        </div>
+        
+        <button class="btn-primary" (click)="exportReport()">
+          <i class="fas fa-download"></i>
+          Exportar Relatório
+        </button>
+      </div>
+
+      <!-- Relatório Financeiro -->
+      <div *ngIf="financialReport" class="report-section">
+        <h3>Relatório Financeiro</h3>
+        <div class="report-grid">
+          <div class="report-card">
+            <h4>Contas a Pagar</h4>
+            <div class="report-item">
+              <span>Total:</span>
+              <span>{{ formatCurrency(financialReport.totalPayables) }}</span>
+            </div>
+            <div class="report-item">
+              <span>Pagas:</span>
+              <span>{{ formatCurrency(financialReport.paidPayables) }}</span>
+            </div>
+            <div class="report-item">
+              <span>Pendentes:</span>
+              <span>{{ formatCurrency(financialReport.pendingPayables) }}</span>
+            </div>
+            <div class="report-item">
+              <span>Vencidas:</span>
+              <span>{{ formatCurrency(financialReport.overduePayables) }}</span>
+            </div>
+          </div>
+          
+          <div class="report-card">
+            <h4>Contas a Receber</h4>
+            <div class="report-item">
+              <span>Total:</span>
+              <span>{{ formatCurrency(financialReport.totalReceivables) }}</span>
+            </div>
+            <div class="report-item">
+              <span>Recebidas:</span>
+              <span>{{ formatCurrency(financialReport.paidReceivables) }}</span>
+            </div>
+            <div class="report-item">
+              <span>Pendentes:</span>
+              <span>{{ formatCurrency(financialReport.pendingReceivables) }}</span>
+            </div>
+            <div class="report-item">
+              <span>Vencidas:</span>
+              <span>{{ formatCurrency(financialReport.overdueReceivables) }}</span>
+            </div>
+          </div>
+          
+          <div class="report-card">
+            <h4>Fluxo de Caixa</h4>
+            <div class="report-item">
+              <span>Receitas:</span>
+              <span>{{ formatCurrency(financialReport.totalIncome) }}</span>
+            </div>
+            <div class="report-item">
+              <span>Despesas:</span>
+              <span>{{ formatCurrency(financialReport.totalExpense) }}</span>
+            </div>
+            <div class="report-item total">
+              <span>Resultado:</span>
+              <span [class]="financialReport.netCashFlow >= 0 ? 'positive' : 'negative'">
+                {{ formatCurrency(financialReport.netCashFlow) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Relatório de Fluxo de Caixa -->
+      <div *ngIf="cashFlowReport" class="report-section">
+        <h3>Fluxo de Caixa</h3>
+        <div class="cash-flow-summary">
+          <div class="summary-item">
+            <span>Saldo Inicial:</span>
+            <span>{{ formatCurrency(cashFlowReport.openingBalance) }}</span>
+          </div>
+          <div class="summary-item">
+            <span>Total Receitas:</span>
+            <span>{{ formatCurrency(cashFlowReport.totalIncome) }}</span>
+          </div>
+          <div class="summary-item">
+            <span>Total Despesas:</span>
+            <span>{{ formatCurrency(cashFlowReport.totalExpense) }}</span>
+          </div>
+          <div class="summary-item total">
+            <span>Saldo Final:</span>
+            <span [class]="cashFlowReport.closingBalance >= 0 ? 'positive' : 'negative'">
+              {{ formatCurrency(cashFlowReport.closingBalance) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulários Modais -->
+  
+  <!-- Formulário de Conta -->
+  <div *ngIf="showForm && (activeTab === 'payables' || activeTab === 'receivables')" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>{{ isCreating ? 'Nova Conta' : 'Editar Conta' }}</h2>
+        <button class="btn-close" (click)="closeForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="form">
+        <div class="form-group">
+          <label for="description">Descrição *</label>
+          <input 
+            type="text" 
+            id="description" 
+            formControlName="description" 
+            class="form-input"
+            placeholder="Descrição da conta"
+          >
+          <div *ngIf="accountForm.get('description')?.invalid && accountForm.get('description')?.touched" class="error-message">
+            Descrição é obrigatória
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="amount">Valor *</label>
+          <input 
+            type="number" 
+            id="amount" 
+            formControlName="amount" 
+            class="form-input"
+            step="0.01"
+            min="0.01"
+            placeholder="0,00"
+          >
+          <div *ngIf="accountForm.get('amount')?.invalid && accountForm.get('amount')?.touched" class="error-message">
+            Valor deve ser maior que zero
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="dueDate">Data de Vencimento *</label>
+          <input 
+            type="date" 
+            id="dueDate" 
+            formControlName="dueDate" 
+            class="form-input"
+          >
+          <div *ngIf="accountForm.get('dueDate')?.invalid && accountForm.get('dueDate')?.touched" class="error-message">
+            Data de vencimento é obrigatória
+          </div>
+        </div>
+        
+        <div class="form-group" *ngIf="activeTab === 'payables'">
+          <label for="supplierId">Fornecedor</label>
+          <select id="supplierId" formControlName="supplierId" class="form-select">
+            <option value="">Selecione um fornecedor</option>
+            <option *ngFor="let supplier of suppliers" [value]="supplier.id">
+              {{ supplier.name }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="form-group" *ngIf="activeTab === 'receivables'">
+          <label for="customerId">Cliente</label>
+          <select id="customerId" formControlName="customerId" class="form-select">
+            <option value="">Selecione um cliente</option>
+            <option *ngFor="let customer of customers" [value]="customer.id">
+              {{ customer.name }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">Observações</label>
+          <textarea 
+            id="notes" 
+            formControlName="notes" 
+            class="form-textarea"
+            rows="3"
+            placeholder="Observações sobre a conta"
+          ></textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="closeForm()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="accountForm.invalid">
+            {{ isCreating ? 'Criar' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Formulário de Movimentação -->
+  <div *ngIf="showForm && activeTab === 'movements'" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>{{ isCreating ? 'Nova Movimentação' : 'Editar Movimentação' }}</h2>
+        <button class="btn-close" (click)="closeForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form [formGroup]="movementForm" (ngSubmit)="saveMovement()" class="form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="type">Tipo *</label>
+            <select id="type" formControlName="type" class="form-select">
+              <option value="income">Receita</option>
+              <option value="expense">Despesa</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="category">Categoria *</label>
+            <select id="category" formControlName="category" class="form-select">
+              <option value="">Selecione uma categoria</option>
+              <option *ngFor="let category of cashMovementCategories" [value]="category">
+                {{ getCategoryText(category) }}
+              </option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="description">Descrição *</label>
+          <input 
+            type="text" 
+            id="description" 
+            formControlName="description" 
+            class="form-input"
+            placeholder="Descrição da movimentação"
+          >
+          <div *ngIf="movementForm.get('description')?.invalid && movementForm.get('description')?.touched" class="error-message">
+            Descrição é obrigatória
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="amount">Valor *</label>
+            <input 
+              type="number" 
+              id="amount" 
+              formControlName="amount" 
+              class="form-input"
+              step="0.01"
+              min="0.01"
+              placeholder="0,00"
+            >
+            <div *ngIf="movementForm.get('amount')?.invalid && movementForm.get('amount')?.touched" class="error-message">
+              Valor deve ser maior que zero
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="date">Data *</label>
+            <input 
+              type="date" 
+              id="date" 
+              formControlName="date" 
+              class="form-input"
+            >
+            <div *ngIf="movementForm.get('date')?.invalid && movementForm.get('date')?.touched" class="error-message">
+              Data é obrigatória
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="paymentMethod">Método de Pagamento</label>
+            <select id="paymentMethod" formControlName="paymentMethod" class="form-select">
+              <option value="">Selecione o método</option>
+              <option *ngFor="let method of paymentMethods" [value]="method">
+                {{ getPaymentMethodText(method) }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="reference">Referência</label>
+            <input 
+              type="text" 
+              id="reference" 
+              formControlName="reference" 
+              class="form-input"
+              placeholder="Referência da movimentação"
+            >
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">Observações</label>
+          <textarea 
+            id="notes" 
+            formControlName="notes" 
+            class="form-textarea"
+            rows="3"
+            placeholder="Observações sobre a movimentação"
+          ></textarea>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="closeForm()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="movementForm.invalid">
+            {{ isCreating ? 'Criar' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

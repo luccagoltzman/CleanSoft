@@ -2,6 +2,7 @@ import { Customer } from './customer.model';
 import { Vehicle } from './customer.model';
 import { Product } from './product.model';
 import { Service } from './service.model';
+import { PaymentMethod, PaymentStatus } from './common.model';
 
 export interface Sale {
   id: number;
@@ -36,21 +37,6 @@ export interface SaleItem {
   totalPrice: number;
   discount: number; // Desconto por item
   notes?: string; // Observações do item
-}
-
-export enum PaymentMethod {
-  CASH = 'cash',
-  CREDIT_CARD = 'credit_card',
-  DEBIT_CARD = 'debit_card',
-  PIX = 'pix',
-  INSTALLMENT = 'installment'
-}
-
-export enum PaymentStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  CANCELLED = 'cancelled',
-  REFUNDED = 'refunded'
 }
 
 export interface SaleSearchParams {
