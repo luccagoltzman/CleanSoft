@@ -1,1 +1,88 @@
 /* You can add global styles to this file, and also import other style files */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+/* Variáveis CSS personalizadas */
+:root {
+  --primary-color: #1976d2;
+  --secondary-color: #424242;
+  --accent-color: #ff4081;
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --error-color: #f44336;
+  --text-primary: #212121;
+  --text-secondary: #757575;
+  --background-light: #fafafa;
+  --background-dark: #303030;
+  --border-color: #e0e0e0;
+  --shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Reset e estilos base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+  background-color: var(--background-light);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Utilitários */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #1565c0;
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-secondary:hover {
+  background-color: #616161;
+}
+
+/* Layout responsivo */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 10px;
+  }
+  
+  .card {
+    padding: 15px;
+  }
+}
