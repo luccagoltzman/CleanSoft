@@ -1,0 +1,347 @@
+<div class="vehicles-container">
+  <!-- Header da Página -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Gestão de Veículos</h1>
+      <button class="btn-primary" (click)="createVehicle()">
+        <i class="fas fa-plus"></i>
+        Novo Veículo
+      </button>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-car"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.total }}</h3>
+        <p>Total de Veículos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.active }}</h3>
+        <p>Veículos Ativos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon inactive">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.inactive }}</h3>
+        <p>Veículos Inativos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon brands">
+        <i class="fas fa-tags"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.byBrand.length }}</h3>
+        <p>Marcas Diferentes</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros e Busca -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        placeholder="Buscar por placa, marca, modelo ou cor..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+        class="search-input"
+      >
+    </div>
+    
+    <div class="filter-controls">
+      <select 
+        [(ngModel)]="brandFilter" 
+        (change)="onBrandFilterChange()"
+        class="filter-select"
+      >
+        <option value="">Todas as Marcas</option>
+        <option *ngFor="let brand of availableBrands" [value]="brand">{{ brand }}</option>
+      </select>
+      
+      <select 
+        [(ngModel)]="customerFilter" 
+        (change)="onCustomerFilterChange()"
+        class="filter-select"
+      >
+        <option value="">Todos os Clientes</option>
+        <option *ngFor="let customer of customers" [value]="customer.id">{{ customer.name }}</option>
+      </select>
+      
+      <select 
+        [(ngModel)]="statusFilter" 
+        (change)="onStatusFilterChange()"
+        class="filter-select"
+      >
+        <option value="all">Todos os Status</option>
+        <option value="active">Ativos</option>
+        <option value="inactive">Inativos</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabela de Veículos -->
+  <div class="table-container">
+    <table class="vehicles-table">
+      <thead>
+        <tr>
+          <th>Placa</th>
+          <th>Cliente</th>
+          <th>Marca/Modelo</th>
+          <th>Ano/Cor</th>
+          <th>Observações</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let vehicle of filteredVehicles" class="vehicle-row">
+          <td>
+            <span class="license-plate">{{ formatLicensePlate(vehicle.licensePlate) }}</span>
+          </td>
+          <td>
+            <div class="customer-info">
+              <strong>{{ getCustomerName(vehicle.customerId) }}</strong>
+            </div>
+          </td>
+          <td>
+            <div class="vehicle-info">
+              <strong>{{ vehicle.brand }}</strong>
+              <span class="model">{{ vehicle.model }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="year-color">
+              <span class="year">{{ vehicle.year }}</span>
+              <span class="color">{{ vehicle.color }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="observations" *ngIf="vehicle.observations">{{ vehicle.observations }}</span>
+            <span class="no-observations" *ngIf="!vehicle.observations">-</span>
+          </td>
+          <td>
+            <span class="status-badge" [class]="vehicle.isActive ? 'active' : 'inactive'">
+              {{ vehicle.isActive ? 'Ativo' : 'Inativo' }}
+            </span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-icon" (click)="viewVehicle(vehicle)" title="Visualizar">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="btn-icon" (click)="editVehicle(vehicle)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button 
+                class="btn-icon" 
+                [class]="vehicle.isActive ? 'btn-danger' : 'btn-success'"
+                (click)="toggleVehicleStatus(vehicle)"
+                [title]="vehicle.isActive ? 'Desativar' : 'Ativar'"
+              >
+                <i class="fas" [class]="vehicle.isActive ? 'fa-times' : 'fa-check'"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div *ngIf="filteredVehicles.length === 0" class="no-results">
+      <i class="fas fa-search"></i>
+      <p>Nenhum veículo encontrado com os filtros aplicados.</p>
+    </div>
+  </div>
+
+  <!-- Formulário de Veículo -->
+  <div *ngIf="showForm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>{{ isCreating ? 'Novo Veículo' : 'Editar Veículo' }}</h2>
+        <button class="btn-close" (click)="closeForm()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form [formGroup]="vehicleForm" (ngSubmit)="saveVehicle()" class="vehicle-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customerId">Cliente *</label>
+            <select id="customerId" formControlName="customerId" class="form-select">
+              <option value="">Selecione um cliente</option>
+              <option *ngFor="let customer of customers" [value]="customer.id">{{ customer.name }}</option>
+            </select>
+            <div *ngIf="vehicleForm.get('customerId')?.invalid && vehicleForm.get('customerId')?.touched" class="error-message">
+              Cliente é obrigatório
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="licensePlate">Placa *</label>
+            <input 
+              type="text" 
+              id="licensePlate" 
+              formControlName="licensePlate" 
+              placeholder="ABC-1234"
+              class="form-input"
+              maxlength="8"
+            >
+            <div *ngIf="vehicleForm.get('licensePlate')?.invalid && vehicleForm.get('licensePlate')?.touched" class="error-message">
+              Placa deve estar no formato ABC-1234
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="brand">Marca *</label>
+            <select id="brand" formControlName="brand" class="form-select" (change)="onBrandChange()">
+              <option value="">Selecione uma marca</option>
+              <option *ngFor="let brand of availableBrands" [value]="brand">{{ brand }}</option>
+            </select>
+            <div *ngIf="vehicleForm.get('brand')?.invalid && vehicleForm.get('brand')?.touched" class="error-message">
+              Marca é obrigatória
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="model">Modelo *</label>
+            <select id="model" formControlName="model" class="form-select" [disabled]="!availableModels.length">
+              <option value="">Selecione um modelo</option>
+              <option *ngFor="let model of availableModels" [value]="model">{{ model }}</option>
+            </select>
+            <div *ngIf="vehicleForm.get('model')?.invalid && vehicleForm.get('model')?.touched" class="error-message">
+              Modelo é obrigatório
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="year">Ano *</label>
+            <select id="year" formControlName="year" class="form-select">
+              <option value="">Selecione o ano</option>
+              <option *ngFor="let year of getYearRange()" [value]="year">{{ year }}</option>
+            </select>
+            <div *ngIf="vehicleForm.get('year')?.invalid && vehicleForm.get('year')?.touched" class="error-message">
+              Ano é obrigatório
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="color">Cor *</label>
+            <select id="color" formControlName="color" class="form-select">
+              <option value="">Selecione a cor</option>
+              <option *ngFor="let color of getColors()" [value]="color">{{ color }}</option>
+            </select>
+            <div *ngIf="vehicleForm.get('color')?.invalid && vehicleForm.get('color')?.touched" class="error-message">
+              Cor é obrigatória
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="observations">Observações</label>
+            <textarea 
+              id="observations" 
+              formControlName="observations" 
+              placeholder="Observações sobre o veículo..."
+              class="form-textarea"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="closeForm()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="vehicleForm.invalid">
+            {{ isCreating ? 'Criar' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de Visualização -->
+  <div *ngIf="selectedVehicle && !showForm" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Detalhes do Veículo</h2>
+        <button class="btn-close" (click)="selectedVehicle = null">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="vehicle-details">
+        <div class="detail-row">
+          <label>Placa:</label>
+          <span class="license-plate">{{ formatLicensePlate(selectedVehicle.licensePlate) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Cliente:</label>
+          <span>{{ getCustomerName(selectedVehicle.customerId) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Marca:</label>
+          <span>{{ selectedVehicle.brand }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Modelo:</label>
+          <span>{{ selectedVehicle.model }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Ano:</label>
+          <span>{{ selectedVehicle.year }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Cor:</label>
+          <span>{{ selectedVehicle.color }}</span>
+        </div>
+        <div class="detail-row" *ngIf="selectedVehicle.observations">
+          <label>Observações:</label>
+          <span>{{ selectedVehicle.observations }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Status:</label>
+          <span class="status-badge" [class]="selectedVehicle.isActive ? 'active' : 'inactive'">
+            {{ selectedVehicle.isActive ? 'Ativo' : 'Inativo' }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <label>Data de Cadastro:</label>
+          <span>{{ selectedVehicle.createdAt | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Última Atualização:</label>
+          <span>{{ selectedVehicle.updatedAt | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="selectedVehicle = null">
+          Fechar
+        </button>
+        <button class="btn-primary" (click)="editVehicle(selectedVehicle)">
+          Editar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
