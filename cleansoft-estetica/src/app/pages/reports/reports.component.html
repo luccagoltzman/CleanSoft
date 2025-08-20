@@ -1,0 +1,803 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1><i class="fas fa-chart-bar"></i> Relatórios</h1>
+    <p>Gere relatórios detalhados sobre o desempenho do seu negócio</p>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <form [formGroup]="reportForm" class="filters-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="period">Período</label>
+          <select id="period" formControlName="period" (change)="onPeriodChange()">
+            <option *ngFor="let option of periodOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="startDate">Data Inicial</label>
+          <input type="date" id="startDate" formControlName="startDate" (change)="onDateChange()">
+        </div>
+        
+        <div class="form-group">
+          <label for="endDate">Data Final</label>
+          <input type="date" id="endDate" formControlName="endDate" (change)="onDateChange()">
+        </div>
+        
+        <div class="form-group">
+          <button type="button" class="btn btn-primary" (click)="generateReport()" [disabled]="isLoading">
+            <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+            {{ isLoading ? 'Gerando...' : 'Gerar Relatório' }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Navegação por abas -->
+  <div class="tabs-navigation">
+    <button 
+      *ngFor="let tab of ['general', 'customers', 'services', 'products', 'stock', 'financial']"
+      [class.active]="activeTab === tab"
+      (click)="setActiveTab(tab)"
+      class="tab-button">
+      <i class="fas" [class.fa-chart-line]="tab === 'general'"
+         [class.fa-users]="tab === 'customers'"
+         [class.fa-tools]="tab === 'services'"
+         [class.fa-box]="tab === 'products'"
+         [class.fa-warehouse]="tab === 'stock'"
+         [class.fa-dollar-sign]="tab === 'financial'"></i>
+      {{ tab === 'general' ? 'Geral' : 
+         tab === 'customers' ? 'Clientes' :
+         tab === 'services' ? 'Serviços' :
+         tab === 'products' ? 'Produtos' :
+         tab === 'stock' ? 'Estoque' : 'Financeiro' }}
+    </button>
+  </div>
+
+  <!-- Conteúdo das abas -->
+  <div class="tab-content">
+    <!-- Relatório Geral -->
+    <div *ngIf="activeTab === 'general'" class="tab-pane">
+      <div class="report-header">
+        <h2>Relatório Geral</h2>
+        <div class="report-meta">
+          <span *ngIf="lastGenerated">
+            <i class="fas fa-clock"></i> Última atualização: {{ formatDate(lastGenerated) }}
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="generalReport" class="report-content">
+        <!-- Resumo -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="card-icon success">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(generalReport.summary.totalSales) }}</h3>
+              <p>Total de Vendas</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon primary">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(generalReport.summary.totalRevenue) }}</h3>
+              <p>Receita Total</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon info">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(generalReport.summary.totalCustomers) }}</h3>
+              <p>Total de Clientes</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon warning">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(generalReport.summary.averageTicket) }}</h3>
+              <p>Ticket Médio</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tendências -->
+        <div class="trends-section">
+          <h3>Tendências</h3>
+          <div class="trends-grid">
+            <div class="trend-item">
+              <span class="trend-label">Crescimento de Vendas</span>
+              <span class="trend-value" [class.positive]="generalReport.trends.salesGrowth > 0"
+                    [class.negative]="generalReport.trends.salesGrowth < 0">
+                {{ formatPercentage(generalReport.trends.salesGrowth) }}
+              </span>
+            </div>
+            <div class="trend-item">
+              <span class="trend-label">Crescimento de Receita</span>
+              <span class="trend-value" [class.positive]="generalReport.trends.revenueGrowth > 0"
+                    [class.negative]="generalReport.trends.revenueGrowth < 0">
+                {{ formatPercentage(generalReport.trends.revenueGrowth) }}
+              </span>
+            </div>
+            <div class="trend-item">
+              <span class="trend-label">Crescimento de Clientes</span>
+              <span class="trend-value" [class.positive]="generalReport.trends.customerGrowth > 0"
+                    [class.negative]="generalReport.trends.customerGrowth < 0">
+                {{ formatPercentage(generalReport.trends.customerGrowth) }}
+              </span>
+            </div>
+            <div class="trend-item">
+              <span class="trend-label">Crescimento de Serviços</span>
+              <span class="trend-value" [class.positive]="generalReport.trends.serviceGrowth > 0"
+                    [class.negative]="generalReport.trends.serviceGrowth < 0">
+                {{ formatPercentage(generalReport.trends.serviceGrowth) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div class="top-performers">
+          <h3>Top Performers</h3>
+          
+          <!-- Top Clientes -->
+          <div class="performer-section">
+            <h4>Top Clientes</h4>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Compras</th>
+                    <th>Receita</th>
+                    <th>Última Compra</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let customer of generalReport.topPerformers.topCustomers">
+                    <td>{{ customer.customer.name }}</td>
+                    <td>{{ formatNumber(customer.totalPurchases) }}</td>
+                    <td>{{ formatCurrency(customer.totalRevenue) }}</td>
+                    <td>{{ formatDate(customer.lastPurchase) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Top Serviços -->
+          <div class="performer-section">
+            <h4>Top Serviços</h4>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Serviço</th>
+                    <th>Quantidade</th>
+                    <th>Receita</th>
+                    <th>Preço Médio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let service of generalReport.topPerformers.topServices">
+                    <td>{{ service.service.name }}</td>
+                    <td>{{ formatNumber(service.quantity) }}</td>
+                    <td>{{ formatCurrency(service.revenue) }}</td>
+                    <td>{{ formatCurrency(service.averagePrice) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Top Produtos -->
+          <div class="performer-section">
+            <h4>Top Produtos</h4>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Receita</th>
+                    <th>Preço Médio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let product of generalReport.topPerformers.topProducts">
+                    <td>{{ product.product.name }}</td>
+                    <td>{{ formatNumber(product.quantity) }}</td>
+                    <td>{{ formatCurrency(product.revenue) }}</td>
+                    <td>{{ formatCurrency(product.averagePrice) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relatório de Clientes -->
+    <div *ngIf="activeTab === 'customers'" class="tab-pane">
+      <div class="report-header">
+        <h2>Relatório de Clientes</h2>
+        <div class="report-meta">
+          <span *ngIf="lastGenerated">
+            <i class="fas fa-clock"></i> Última atualização: {{ formatDate(lastGenerated) }}
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="customerReport" class="report-content">
+        <!-- Estatísticas -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="card-icon info">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(customerReport.totalCustomers) }}</h3>
+              <p>Total de Clientes</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon success">
+              <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(customerReport.newCustomers) }}</h3>
+              <p>Novos Clientes</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon primary">
+              <i class="fas fa-user-check"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(customerReport.activeCustomers) }}</h3>
+              <p>Clientes Ativos</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon warning">
+              <i class="fas fa-user-times"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(customerReport.inactiveCustomers) }}</h3>
+              <p>Clientes Inativos</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Clientes -->
+        <div class="section">
+          <h3>Top Clientes por Receita</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Telefone</th>
+                  <th>Compras</th>
+                  <th>Receita Total</th>
+                  <th>Última Compra</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let customer of customerReport.topCustomers">
+                  <td>{{ customer.customer.name }}</td>
+                  <td>{{ customer.customer.phone }}</td>
+                  <td>{{ formatNumber(customer.totalPurchases) }}</td>
+                  <td>{{ formatCurrency(customer.totalRevenue) }}</td>
+                  <td>{{ formatDate(customer.lastPurchase) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Clientes Inadimplentes -->
+        <div class="section">
+          <h3>Clientes Inadimplentes</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Telefone</th>
+                  <th>Valor em Atraso</th>
+                  <th>Dias em Atraso</th>
+                  <th>Último Pagamento</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let customer of customerReport.delinquentCustomers">
+                  <td>{{ customer.customer.name }}</td>
+                  <td>{{ customer.customer.phone }}</td>
+                  <td>{{ formatCurrency(customer.overdueAmount) }}</td>
+                  <td>{{ formatNumber(customer.daysOverdue) }}</td>
+                  <td>{{ formatDate(customer.lastPayment) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relatório de Serviços -->
+    <div *ngIf="activeTab === 'services'" class="tab-pane">
+      <div class="report-header">
+        <h2>Relatório de Serviços</h2>
+        <div class="report-meta">
+          <span *ngIf="lastGenerated">
+            <i class="fas fa-clock"></i> Última atualização: {{ formatDate(lastGenerated) }}
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="serviceReport" class="report-content">
+        <!-- Estatísticas -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="card-icon info">
+              <i class="fas fa-tools"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(serviceReport.totalServices) }}</h3>
+              <p>Total de Serviços</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon success">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(serviceReport.totalRevenue) }}</h3>
+              <p>Receita Total</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon primary">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(serviceReport.averageTicket) }}</h3>
+              <p>Ticket Médio</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Serviços -->
+        <div class="section">
+          <h3>Top Serviços por Vendas</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Serviço</th>
+                  <th>Categoria</th>
+                  <th>Quantidade</th>
+                  <th>Receita</th>
+                  <th>Preço Médio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let service of serviceReport.topServices">
+                  <td>{{ service.service.name }}</td>
+                  <td>{{ service.service.category }}</td>
+                  <td>{{ formatNumber(service.quantity) }}</td>
+                  <td>{{ formatCurrency(service.revenue) }}</td>
+                  <td>{{ formatCurrency(service.averagePrice) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Serviços por Categoria -->
+        <div class="section">
+          <h3>Serviços por Categoria</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Categoria</th>
+                  <th>Quantidade</th>
+                  <th>Receita</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let category of serviceReport.servicesByCategory">
+                  <td>{{ category.category }}</td>
+                  <td>{{ formatNumber(category.quantity) }}</td>
+                  <td>{{ formatCurrency(category.revenue) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relatório de Produtos -->
+    <div *ngIf="activeTab === 'products'" class="tab-pane">
+      <div class="report-header">
+        <h2>Relatório de Produtos</h2>
+        <div class="report-meta">
+          <span *ngIf="lastGenerated">
+            <i class="fas fa-clock"></i> Última atualização: {{ formatDate(lastGenerated) }}
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="productReport" class="report-content">
+        <!-- Estatísticas -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="card-icon info">
+              <i class="fas fa-box"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(productReport.totalProducts) }}</h3>
+              <p>Total de Produtos</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon success">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(productReport.totalRevenue) }}</h3>
+              <p>Receita Total</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon primary">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(productReport.averagePrice) }}</h3>
+              <p>Preço Médio</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Produtos -->
+        <div class="section">
+          <h3>Top Produtos por Vendas</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Categoria</th>
+                  <th>Quantidade</th>
+                  <th>Receita</th>
+                  <th>Preço Médio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let product of productReport.topProducts">
+                  <td>{{ product.product.name }}</td>
+                  <td>{{ product.product.category }}</td>
+                  <td>{{ formatNumber(product.quantity) }}</td>
+                  <td>{{ formatCurrency(product.revenue) }}</td>
+                  <td>{{ formatCurrency(product.averagePrice) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Produtos por Categoria -->
+        <div class="section">
+          <h3>Produtos por Categoria</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Categoria</th>
+                  <th>Quantidade</th>
+                  <th>Receita</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let category of productReport.productsByCategory">
+                  <td>{{ category.category }}</td>
+                  <td>{{ formatNumber(category.quantity) }}</td>
+                  <td>{{ formatCurrency(category.revenue) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relatório de Estoque -->
+    <div *ngIf="activeTab === 'stock'" class="tab-pane">
+      <div class="report-header">
+        <h2>Relatório de Estoque</h2>
+        <div class="report-meta">
+          <span *ngIf="lastGenerated">
+            <i class="fas fa-clock"></i> Última atualização: {{ formatDate(lastGenerated) }}
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="stockReport" class="report-content">
+        <!-- Resumo do Estoque -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="card-icon info">
+              <i class="fas fa-boxes"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(stockReport.stockSummary.totalProducts) }}</h3>
+              <p>Total de Produtos</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon success">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(stockReport.stockSummary.normalStock) }}</h3>
+              <p>Estoque Normal</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon warning">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(stockReport.stockSummary.lowStock) }}</h3>
+              <p>Estoque Baixo</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon danger">
+              <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatNumber(stockReport.stockSummary.outOfStock) }}</h3>
+              <p>Sem Estoque</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Produtos com Estoque Baixo -->
+        <div class="section">
+          <h3>Produtos com Estoque Baixo</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Categoria</th>
+                  <th>Estoque Atual</th>
+                  <th>Estoque Mínimo</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of stockReport.lowStock">
+                  <td>{{ item.product.name }}</td>
+                  <td>{{ item.product.category }}</td>
+                  <td>{{ formatNumber(item.currentStock) }}</td>
+                  <td>{{ formatNumber(item.minStock) }}</td>
+                  <td>
+                    <span class="status-badge" [class]="getStatusClass(item.status)">
+                      {{ getStatusText(item.status) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Produtos Sem Estoque -->
+        <div class="section">
+          <h3>Produtos Sem Estoque</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Categoria</th>
+                  <th>Última Data de Estoque</th>
+                  <th>Dias Sem Estoque</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of stockReport.outOfStock">
+                  <td>{{ item.product.name }}</td>
+                  <td>{{ item.product.category }}</td>
+                  <td>{{ formatDate(item.lastStockDate) }}</td>
+                  <td>{{ formatNumber(item.daysOutOfStock) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relatório Financeiro -->
+    <div *ngIf="activeTab === 'financial'" class="tab-pane">
+      <div class="report-header">
+        <h2>Relatório Financeiro</h2>
+        <div class="report-meta">
+          <span *ngIf="lastGenerated">
+            <i class="fas fa-clock"></i> Última atualização: {{ formatDate(lastGenerated) }}
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="financialReport" class="report-content">
+        <!-- Fluxo de Caixa -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="card-icon success">
+              <i class="fas fa-arrow-up"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(financialReport.cashFlow.totalIncome) }}</h3>
+              <p>Receitas</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon danger">
+              <i class="fas fa-arrow-down"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(financialReport.cashFlow.totalExpense) }}</h3>
+              <p>Despesas</p>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <div class="card-icon primary">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+              <h3>{{ formatCurrency(financialReport.cashFlow.netCashFlow) }}</h3>
+              <p>Fluxo de Caixa</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contas a Pagar -->
+        <div class="section">
+          <h3>Contas a Pagar</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Total</th>
+                  <th>Pago</th>
+                  <th>Pendente</th>
+                  <th>Vencido</th>
+                  <th>Valor Vencido</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ formatCurrency(financialReport.accountsPayable.total) }}</td>
+                  <td>{{ formatCurrency(financialReport.accountsPayable.paid) }}</td>
+                  <td>{{ formatCurrency(financialReport.accountsPayable.pending) }}</td>
+                  <td>{{ formatCurrency(financialReport.accountsPayable.overdue) }}</td>
+                  <td>{{ formatCurrency(financialReport.accountsPayable.overdueAmount) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Contas a Receber -->
+        <div class="section">
+          <h3>Contas a Receber</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Total</th>
+                  <th>Recebido</th>
+                  <th>Pendente</th>
+                  <th>Vencido</th>
+                  <th>Valor Vencido</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ formatCurrency(financialReport.accountsReceivable.total) }}</td>
+                  <td>{{ formatCurrency(financialReport.accountsReceivable.received) }}</td>
+                  <td>{{ formatCurrency(financialReport.accountsReceivable.pending) }}</td>
+                  <td>{{ formatCurrency(financialReport.accountsReceivable.overdue) }}</td>
+                  <td>{{ formatCurrency(financialReport.accountsReceivable.overdueAmount) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configurações de Exportação -->
+  <div class="export-section">
+    <h3>Exportar Relatório</h3>
+    <form [formGroup]="exportForm" class="export-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="format">Formato</label>
+          <select id="format" formControlName="format">
+            <option *ngFor="let format of exportFormats" [value]="format.value">
+              {{ format.label }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="chartType">Tipo de Gráfico</label>
+          <select id="chartType" formControlName="chartType">
+            <option value="bar">Barras</option>
+            <option value="line">Linha</option>
+            <option value="pie">Pizza</option>
+            <option value="doughnut">Rosca</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="pageSize">Tamanho da Página</label>
+          <select id="pageSize" formControlName="pageSize">
+            <option value="A4">A4</option>
+            <option value="Letter">Letter</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="orientation">Orientação</label>
+          <select id="orientation" formControlName="orientation">
+            <option value="portrait">Retrato</option>
+            <option value="landscape">Paisagem</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <button type="button" class="btn btn-success" (click)="exportReport()">
+            <i class="fas fa-download"></i> Exportar
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

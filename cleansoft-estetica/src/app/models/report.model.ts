@@ -91,7 +91,7 @@ export interface ProductReport {
 }
 
 // Relatórios de Estoque (RF36)
-export interface StockReport {
+export interface StockReportData {
   currentStock: {
     productId: number;
     product: Product;
@@ -112,6 +112,7 @@ export interface StockReport {
     currentStock: number;
     minStock: number;
     daysToOutOfStock: number;
+    status: 'low';
   }[];
   stockMovements: {
     productId: number;
@@ -132,7 +133,7 @@ export interface StockReport {
 }
 
 // Relatórios Financeiros (RF37)
-export interface FinancialReport {
+export interface FinancialReportData {
   period: 'daily' | 'weekly' | 'monthly' | 'yearly';
   startDate: Date;
   endDate: Date;
@@ -222,4 +223,5 @@ export interface ReportConfig {
   chartType: 'bar' | 'line' | 'pie' | 'doughnut';
   pageSize: 'A4' | 'Letter';
   orientation: 'portrait' | 'landscape';
+  format: ExportFormat;
 }
