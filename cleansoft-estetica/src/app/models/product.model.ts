@@ -2,7 +2,6 @@ export interface Supplier {
   id: number;
   name: string;
   document: string; // CPF ou CNPJ
-  documentType: 'CPF' | 'CNPJ';
   contact: string;
   address: string;
   phone: string;
@@ -18,27 +17,29 @@ export interface Product {
   name: string;
   description: string;
   sku: string;
-  unitOfMeasure: string;
+  unit: string;
   costPrice: number;
   salePrice: number;
   currentStock: number;
-  minimumStock: number;
+  minStock: number;
   isActive: boolean;
+  supplierId: number;
   createdAt: Date;
   updatedAt: Date;
-  supplier?: Supplier;
 }
 
 export interface StockMovement {
   id: number;
   productId: number;
-  type: 'IN' | 'OUT';
+  type: 'entry' | 'exit';
   quantity: number;
   reason: StockMovementReason;
-  reference?: string; // ID da venda, compra, etc.
+  unitPrice: number;
+  totalValue: number;
+  supplierId?: number;
   notes?: string;
+  date: Date;
   createdAt: Date;
-  createdBy: number; // ID do usuário
 }
 
 export enum StockMovementReason {
@@ -53,13 +54,18 @@ export interface ProductSearchParams {
   name?: string;
   category?: string;
   sku?: string;
+  supplierId?: number;
   isActive?: boolean;
   lowStock?: boolean;
 }
 
 export interface StockReport {
-  products: Product[];
-  lowStockProducts: Product[];
   totalProducts: number;
+  activeProducts: number;
+  lowStockProducts: number;
+  outOfStockProducts: number;
   totalValue: number;
+  averageValue: number;
+  lowStockProductsList: Product[];
+  outOfStockProductsList: Product[];
 }
