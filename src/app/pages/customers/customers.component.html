@@ -54,31 +54,18 @@
   <div class="filters-section">
     <div class="search-box">
       <i class="fas fa-search"></i>
-      <input 
-        type="text" 
-        placeholder="Buscar por nome, telefone, documento ou email..."
-        [(ngModel)]="searchTerm"
-        (input)="onSearchChange()"
-        class="search-input"
-      >
+      <input type="text" placeholder="Buscar por nome, telefone, documento ou email..." [(ngModel)]="searchTerm"
+        (input)="onSearchChange()" class="search-input">
     </div>
-    
+
     <div class="filter-controls">
-      <select 
-        [(ngModel)]="documentTypeFilter" 
-        (change)="onDocumentTypeFilterChange()"
-        class="filter-select"
-      >
+      <select [(ngModel)]="documentTypeFilter" (change)="onDocumentTypeFilterChange()" class="filter-select">
         <option value="all">Todos os Documentos</option>
         <option value="CPF">CPF</option>
         <option value="CNPJ">CNPJ</option>
       </select>
-      
-      <select 
-        [(ngModel)]="statusFilter" 
-        (change)="onStatusFilterChange()"
-        class="filter-select"
-      >
+
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
         <option value="all">Todos os Status</option>
         <option value="active">Ativos</option>
         <option value="inactive">Inativos</option>
@@ -111,9 +98,10 @@
           <td>{{ customer.phone }}</td>
           <td>{{ customer.email }}</td>
           <td>
-            <span class="document-badge" [class]="customer.documentType.toLowerCase()">
+            <span class="document-badge" [class]="customer.documentType?.toLowerCase() || ''">
               {{ formatDocument(customer.document, customer.documentType) }}
             </span>
+
           </td>
           <td>
             <span class="vehicles-count">
@@ -133,12 +121,8 @@
               <button class="btn-icon" (click)="editCustomer(customer)" title="Editar">
                 <i class="fas fa-edit"></i>
               </button>
-              <button 
-                class="btn-icon" 
-                [class]="customer.isActive ? 'btn-danger' : 'btn-success'"
-                (click)="toggleCustomerStatus(customer)"
-                [title]="customer.isActive ? 'Desativar' : 'Ativar'"
-              >
+              <button class="btn-icon" [class]="customer.isActive ? 'btn-danger' : 'btn-success'"
+                (click)="toggleCustomerStatus(customer)" [title]="customer.isActive ? 'Desativar' : 'Ativar'">
                 <i class="fas" [class]="customer.isActive ? 'fa-user-times' : 'fa-user-check'"></i>
               </button>
             </div>
@@ -146,7 +130,7 @@
         </tr>
       </tbody>
     </table>
-    
+
     <div *ngIf="filteredCustomers.length === 0" class="no-results">
       <i class="fas fa-search"></i>
       <p>Nenhum cliente encontrado com os filtros aplicados.</p>
@@ -162,53 +146,36 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form [formGroup]="customerForm" (ngSubmit)="saveCustomer()" class="customer-form">
         <div class="form-row">
           <div class="form-group">
             <label for="name">Nome *</label>
-            <input 
-              type="text" 
-              id="name" 
-              formControlName="name" 
-              placeholder="Nome completo ou razão social"
-              class="form-input"
-            >
+            <input type="text" id="name" formControlName="name" placeholder="Nome completo ou razão social"
+              class="form-input">
             <div *ngIf="customerForm.get('name')?.invalid && customerForm.get('name')?.touched" class="error-message">
               Nome é obrigatório e deve ter pelo menos 3 caracteres
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="phone">Telefone *</label>
-            <input 
-              type="text" 
-              id="phone" 
-              formControlName="phone" 
-              placeholder="(11) 99999-9999"
-              class="form-input"
-            >
+            <input type="text" id="phone" formControlName="phone" placeholder="(11) 99999-9999" class="form-input">
             <div *ngIf="customerForm.get('phone')?.invalid && customerForm.get('phone')?.touched" class="error-message">
               Telefone é obrigatório no formato (11) 99999-9999
             </div>
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="email">Email *</label>
-            <input 
-              type="email" 
-              id="email" 
-              formControlName="email" 
-              placeholder="email@exemplo.com"
-              class="form-input"
-            >
+            <input type="email" id="email" formControlName="email" placeholder="email@exemplo.com" class="form-input">
             <div *ngIf="customerForm.get('email')?.invalid && customerForm.get('email')?.touched" class="error-message">
               Email é obrigatório e deve ser válido
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="documentType">Tipo de Documento *</label>
             <select id="documentType" formControlName="documentType" class="form-select">
@@ -217,34 +184,25 @@
             </select>
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="document">Documento *</label>
-            <input 
-              type="text" 
-              id="document" 
-              formControlName="document" 
-              [placeholder]="getDocumentMask()"
-              class="form-input"
-            >
-            <div *ngIf="customerForm.get('document')?.invalid && customerForm.get('document')?.touched" class="error-message">
+            <input type="text" id="document" formControlName="document" [placeholder]="getDocumentMask()"
+              class="form-input">
+            <div *ngIf="customerForm.get('document')?.invalid && customerForm.get('document')?.touched"
+              class="error-message">
               Documento é obrigatório
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="observations">Observações</label>
-            <textarea 
-              id="observations" 
-              formControlName="observations" 
-              placeholder="Observações adicionais..."
-              class="form-textarea"
-              rows="3"
-            ></textarea>
+            <textarea id="observations" formControlName="observations" placeholder="Observações adicionais..."
+              class="form-textarea" rows="3"></textarea>
           </div>
         </div>
-        
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" (click)="closeForm()">
             Cancelar
@@ -266,7 +224,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <div class="customer-details">
         <div class="detail-row">
           <label>Nome:</label>
@@ -282,7 +240,7 @@
         </div>
         <div class="detail-row">
           <label>Documento:</label>
-          <span class="document-badge" [class]="selectedCustomer.documentType.toLowerCase()">
+          <span class="document-badge" [class]="selectedCustomer.documentType?.toLowerCase() || ''">
             {{ formatDocument(selectedCustomer.document, selectedCustomer.documentType) }}
           </span>
         </div>
@@ -300,7 +258,7 @@
           <label>Data de Cadastro:</label>
           <span>{{ selectedCustomer.createdAt | date:'dd/MM/yyyy' }}</span>
         </div>
-        
+
         <div class="vehicles-section" *ngIf="selectedCustomer.vehicles.length > 0">
           <h3>Veículos ({{ selectedCustomer.vehicles.length }})</h3>
           <div class="vehicles-list">
@@ -314,7 +272,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="modal-actions">
         <button class="btn-secondary" (click)="selectedCustomer = null">
           Fechar

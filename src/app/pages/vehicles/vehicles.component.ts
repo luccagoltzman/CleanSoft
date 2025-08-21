@@ -1,10 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { VehicleService } from '../../services/vehicle.service';
-import { CustomerService } from '../../services/customer.service';
-import { Vehicle, VehicleSearchParams, Customer } from '../../models';
-import { Subject, takeUntil, combineLatest } from 'rxjs';
+import { Vehicle, Customer } from '../../models';
+import { Subject, takeUntil, combineLatest, of, Observable } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-vehicles',
@@ -25,7 +24,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   brandFilter = '';
   customerFilter = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
-  
+
   vehicleForm: FormGroup;
   stats: {
     total: number;
@@ -34,15 +33,61 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     byBrand: { brand: string; count: number }[];
     byYear: { year: number; count: number }[];
   } = { total: 0, active: 0, inactive: 0, byBrand: [], byYear: [] };
-  availableBrands: string[] = [];
+  availableBrands: string[] = [
+    'Honda',
+    'Toyota',
+    'Ford',
+    'Chevrolet',
+    'Volkswagen',
+    'Nissan',
+    'Hyundai'
+  ];
+
+  brandModels = [
+    { brand: 'Honda', model: 'Civic' },
+    { brand: 'Honda', model: 'Accord' },
+    { brand: 'Honda', model: 'HR-V' },
+    { brand: 'Honda', model: 'Fit' },
+
+    { brand: 'Toyota', model: 'Corolla' },
+    { brand: 'Toyota', model: 'Camry' },
+    { brand: 'Toyota', model: 'Yaris' },
+    { brand: 'Toyota', model: 'RAV4' },
+
+    { brand: 'Ford', model: 'Mustang' },
+    { brand: 'Ford', model: 'Fiesta' },
+    { brand: 'Ford', model: 'EcoSport' },
+    { brand: 'Ford', model: 'Focus' },
+
+    { brand: 'Chevrolet', model: 'Onix' },
+    { brand: 'Chevrolet', model: 'Cruze' },
+    { brand: 'Chevrolet', model: 'Tracker' },
+    { brand: 'Chevrolet', model: 'S10' },
+
+    { brand: 'Volkswagen', model: 'Golf' },
+    { brand: 'Volkswagen', model: 'Polo' },
+    { brand: 'Volkswagen', model: 'T-Cross' },
+    { brand: 'Volkswagen', model: 'Virtus' },
+
+    { brand: 'Nissan', model: 'Sentra' },
+    { brand: 'Nissan', model: 'Altima' },
+    { brand: 'Nissan', model: 'Kicks' },
+    { brand: 'Nissan', model: 'Versa' },
+
+    { brand: 'Hyundai', model: 'HB20' },
+    { brand: 'Hyundai', model: 'Creta' },
+    { brand: 'Hyundai', model: 'Tucson' },
+    { brand: 'Hyundai', model: 'Elantra' }
+  ];
+
+
   availableModels: string[] = [];
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
-    private vehicleService: VehicleService,
-    private customerService: CustomerService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private api: ApiService
   ) {
     this.vehicleForm = this.fb.group({
       customerId: ['', Validators.required],
@@ -58,16 +103,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadVehicles();
     this.loadCustomers();
-    this.loadStats();
-    this.loadAvailableBrands();
-    
-    // Observar mudanças nos veículos
-    this.vehicleService.getVehicles()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(vehicles => {
-        this.vehicles = vehicles;
-        this.applyFilters();
-      });
+
   }
 
   ngOnDestroy() {
@@ -76,42 +112,67 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   loadVehicles() {
-    this.vehicleService.getVehicles()
+    this.api.getAll('vehicles')
       .pipe(takeUntil(this.destroy$))
       .subscribe(vehicles => {
         this.vehicles = vehicles;
         this.applyFilters();
+        this.loadStats();
       });
   }
 
   loadCustomers() {
-    this.customerService.getCustomers()
+    this.api.getAll('clients', { isActive: 'eq.true' })
       .pipe(takeUntil(this.destroy$))
       .subscribe(customers => {
-        this.customers = customers.filter(c => c.isActive);
+        this.customers = customers
       });
   }
 
   loadStats() {
-    this.vehicleService.getVehicleStats()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(stats => {
-        this.stats = stats;
-      });
+    const vehicles = this.vehicles || [];
+
+    this.stats.total = vehicles.length;
+    this.stats.active = vehicles.filter(v => v.isActive).length;
+    this.stats.inactive = vehicles.filter(v => !v.isActive).length;
+
+    const brandMap: { [brand: string]: number } = {};
+    vehicles.forEach(v => {
+      const brand = v.brand || 'Unknown';
+      brandMap[brand] = (brandMap[brand] || 0) + 1;
+    });
+    this.stats.byBrand = Object.keys(brandMap).map(brand => ({
+      brand,
+      count: brandMap[brand]
+    }));
+
+    // Estatísticas por ano
+    const yearMap: { [year: number]: number } = {};
+    vehicles.forEach(v => {
+      const year = v.year || 0;
+      yearMap[year] = (yearMap[year] || 0) + 1;
+    });
+    this.stats.byYear = Object.keys(yearMap).map(year => ({
+      year: Number(year),
+      count: yearMap[Number(year)]
+    })).sort((a, b) => b.year - a.year);
   }
 
-  loadAvailableBrands() {
-    this.vehicleService.getAvailableBrands()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(brands => {
-        this.availableBrands = brands;
-      });
+
+  getModelsByBrand(brand: string): Observable<string[]> {
+    const models = [...new Set(
+      this.brandModels
+        .filter(v => v.brand?.toLowerCase() === brand.toLowerCase())
+        .map(v => v.model)
+        .filter(m => m) // remove modelos null ou undefined
+    )];
+    return of(models.sort());
   }
 
   onBrandChange() {
     const brand = this.vehicleForm.get('brand')?.value;
     if (brand) {
-      this.vehicleService.getModelsByBrand(brand)
+      this.getModelsByBrand(brand)
         .pipe(takeUntil(this.destroy$))
         .subscribe(models => {
           this.availableModels = models;
@@ -123,12 +184,13 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     }
   }
 
+
   applyFilters() {
     let filtered = [...this.vehicles];
 
     // Filtro por termo de busca
     if (this.searchTerm) {
-      filtered = filtered.filter(v => 
+      filtered = filtered.filter(v =>
         v.licensePlate.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         v.brand.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         v.model.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
@@ -184,13 +246,13 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.isEditing = true;
     this.isCreating = false;
     this.selectedVehicle = vehicle;
-    
+
     // Carregar modelos da marca selecionada
-    this.vehicleService.getModelsByBrand(vehicle.brand)
+    this.getModelsByBrand(vehicle.brand)
       .pipe(takeUntil(this.destroy$))
       .subscribe(models => {
         this.availableModels = models;
-        
+
         this.vehicleForm.patchValue({
           customerId: vehicle.customerId,
           licensePlate: vehicle.licensePlate,
@@ -201,7 +263,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           observations: vehicle.observations
         });
       });
-    
+
     this.showForm = true;
   }
 
@@ -213,9 +275,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   saveVehicle() {
     if (this.vehicleForm.valid) {
       const formValue = this.vehicleForm.value;
-      
+
       if (this.isCreating) {
-        this.vehicleService.createVehicle({
+        this.api.create('vehicles', {
           ...formValue,
           isActive: true
         }).subscribe(() => {
@@ -224,7 +286,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.loadStats();
         });
       } else if (this.isEditing && this.selectedVehicle) {
-        this.vehicleService.updateVehicle(this.selectedVehicle.id, formValue)
+        this.api.update('vehicles', this.selectedVehicle.id, formValue)
           .subscribe(() => {
             this.closeForm();
             this.loadVehicles();
@@ -243,17 +305,17 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   toggleVehicleStatus(vehicle: Vehicle) {
-    if (vehicle.isActive) {
-      this.vehicleService.deactivateVehicle(vehicle.id).subscribe(() => {
-        this.loadVehicles();
-        this.loadStats();
-      });
-    } else {
-      this.vehicleService.activateVehicle(vehicle.id).subscribe(() => {
-        this.loadVehicles();
-        this.loadStats();
-      });
-    }
+    // if (vehicle.isActive) {
+    //   this.vehicleService.deactivateVehicle(vehicle.id).subscribe(() => {
+    //     this.loadVehicles();
+    //     this.loadStats();
+    //   });
+    // } else {
+    //   this.vehicleService.activateVehicle(vehicle.id).subscribe(() => {
+    //     this.loadVehicles();
+    //     this.loadStats();
+    //   });
+    // }
   }
 
   getCustomerName(customerId: number): string {
@@ -276,7 +338,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   getColors(): string[] {
     return [
-      'Branco', 'Preto', 'Prata', 'Cinza', 'Azul', 'Vermelho', 
+      'Branco', 'Preto', 'Prata', 'Cinza', 'Azul', 'Vermelho',
       'Verde', 'Amarelo', 'Laranja', 'Rosa', 'Roxo', 'Marrom'
     ];
   }

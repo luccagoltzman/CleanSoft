@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { CustomerService } from '../../services/customer.service';
 import { Customer, CustomerSearchParams } from '../../models';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-customers',
@@ -22,15 +22,15 @@ export class CustomersComponent implements OnInit, OnDestroy {
   searchTerm = '';
   documentTypeFilter: 'CPF' | 'CNPJ' | 'all' = 'all';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
-  
+
   customerForm: FormGroup;
   stats = { total: 0, active: 0, inactive: 0, withVehicles: 0 };
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
-    private customerService: CustomerService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private api: ApiService,
   ) {
     this.customerForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -44,15 +44,9 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadCustomers();
-    this.loadStats();
-    
-    // Busca com debounce
-    this.customerService.getCustomers()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(customers => {
-        this.customers = customers;
-        this.applyFilters();
-      });
+    // this.loadStats();
+
+
   }
 
   ngOnDestroy() {
@@ -61,41 +55,46 @@ export class CustomersComponent implements OnInit, OnDestroy {
   }
 
   loadCustomers() {
-    this.customerService.getCustomers()
+    this.api.getAll('clients', { select: '*,vehicles(*)' })
       .pipe(takeUntil(this.destroy$))
       .subscribe(customers => {
         this.customers = customers;
         this.applyFilters();
+        this.loadStats();
       });
   }
 
   loadStats() {
-    this.customerService.getCustomerStats()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(stats => {
-        this.stats = stats;
-      });
+    const customers = this.customers || [];
+
+    this.stats = {
+      total: customers.length,
+      active: customers.filter(c => c.isActive).length,
+      inactive: customers.filter(c => !c.isActive).length,
+      withVehicles: customers.filter(c => c.vehicles && c.vehicles.length > 0).length
+    };
   }
+
+
 
   applyFilters() {
     let filtered = [...this.customers];
 
-    // Filtro por termo de busca
     if (this.searchTerm) {
-      filtered = filtered.filter(c => 
-        c.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        c.phone.includes(this.searchTerm) ||
-        c.document.includes(this.searchTerm) ||
-        c.email.toLowerCase().includes(this.searchTerm.toLowerCase())
+      console.log('term:', this.searchTerm);
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(c =>
+        (c.name?.toLowerCase() || '').includes(term) ||
+        (c.phone || '').includes(this.searchTerm) ||
+        (c.document || '').includes(this.searchTerm) ||
+        (c.email?.toLowerCase() || '').includes(term)
       );
     }
 
-    // Filtro por tipo de documento
     if (this.documentTypeFilter !== 'all') {
-      filtered = filtered.filter(c => c.documentType === this.documentTypeFilter);
+      filtered = filtered.filter(c => (c.documentType || '') === this.documentTypeFilter);
     }
 
-    // Filtro por status
     if (this.statusFilter !== 'all') {
       const isActive = this.statusFilter === 'active';
       filtered = filtered.filter(c => c.isActive === isActive);
@@ -147,19 +146,18 @@ export class CustomersComponent implements OnInit, OnDestroy {
   saveCustomer() {
     if (this.customerForm.valid) {
       const formValue = this.customerForm.value;
-      
+
       if (this.isCreating) {
-        this.customerService.createCustomer({
+        this.api.create('clients', {
           ...formValue,
           isActive: true,
-          vehicles: []
         }).subscribe(() => {
           this.closeForm();
           this.loadCustomers();
           this.loadStats();
         });
       } else if (this.isEditing && this.selectedCustomer) {
-        this.customerService.updateCustomer(this.selectedCustomer.id, formValue)
+        this.api.update('clients', this.selectedCustomer.id, formValue)
           .subscribe(() => {
             this.closeForm();
             this.loadCustomers();
@@ -177,17 +175,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
   }
 
   toggleCustomerStatus(customer: Customer) {
-    if (customer.isActive) {
-      this.customerService.deactivateCustomer(customer.id).subscribe(() => {
-        this.loadCustomers();
-        this.loadStats();
-      });
-    } else {
-      this.customerService.activateCustomer(customer.id).subscribe(() => {
-        this.loadCustomers();
-        this.loadStats();
-      });
-    }
+   
   }
 
   getDocumentMask(): string {

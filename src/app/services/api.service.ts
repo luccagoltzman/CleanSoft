@@ -17,14 +17,27 @@ export class ApiService {
     const token = localStorage.getItem('supabase_token');
     return new HttpHeaders({
       'apikey': environment.supabaseKey,
-      'Authorization': token ? `Bearer ${token}` : `Bearer ${environment.supabaseKey}`,
+      'Authorization': environment.UserToken ? `Bearer ${environment.UserToken}` : `Bearer ${environment.supabaseKey}`,
       'Content-Type': 'application/json'
     });
   }
 
-  getAll(table: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/${table}`, { headers: this.getHeaders() });
+  getAll(table: string, params?: { [key: string]: any }): Observable<any> {
+    let url = `${this.baseUrl}/${table}`;
+
+    if (params) {
+      const query = new URLSearchParams();
+      for (const key in params) {
+        if (params[key] !== undefined && params[key] !== null) {
+          query.set(key, params[key]);
+        }
+      }
+      url += `?${query.toString()}`;
+    }
+
+    return this.http.get(url, { headers: this.getHeaders() });
   }
+
 
   getById(table: string, id: number): Observable<any> {
     return this.http.get(`${this.baseUrl}/${table}?id=eq.${id}`, { headers: this.getHeaders() });
