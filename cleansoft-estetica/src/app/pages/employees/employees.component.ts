@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { EmployeeService } from '../../services/employee.service';
-import { Employee, EmployeeSearchParams, EmployeeReport } from '../../models';
-import { Subject, takeUntil } from 'rxjs';
+import { Employee } from '../../models';
+import { of, Subject, takeUntil } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-employees',
@@ -13,6 +13,7 @@ import { Subject, takeUntil } from 'rxjs';
   styleUrl: './employees.component.css'
 })
 export class EmployeesComponent implements OnInit, OnDestroy {
+
   employees: Employee[] = [];
   filteredEmployees: Employee[] = [];
   selectedEmployee: Employee | null = null;
@@ -23,7 +24,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   searchTerm = '';
   positionFilter = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
-  
+
   employeeForm: FormGroup;
   dismissalForm: FormGroup;
   stats: {
@@ -33,21 +34,21 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     byPosition: { position: string; count: number }[];
     totalSalary: number;
     averageSalary: number;
-  } = { 
-    total: 0, 
-    active: 0, 
-    inactive: 0, 
-    byPosition: [], 
-    totalSalary: 0, 
-    averageSalary: 0 
-  };
+  } = {
+      total: 0,
+      active: 0,
+      inactive: 0,
+      byPosition: [],
+      totalSalary: 0,
+      averageSalary: 0
+    };
   availablePositions: string[] = [];
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
-    private employeeService: EmployeeService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private apiService: ApiService
   ) {
     this.employeeForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -65,17 +66,39 @@ export class EmployeesComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadEmployees();
-    this.loadStats();
     this.loadAvailablePositions();
-    
-    // Observar mudanças nos funcionários
-    this.employeeService.getEmployees()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(employees => {
-        this.employees = employees;
-        this.applyFilters();
-      });
+    this.loadStats()
   }
+
+  loadStats() {
+    const employees = this.employees;
+
+    console.log(employees);
+    const total = employees.length;
+    const activeEmployees = employees.filter(e => e.isActive);
+    const inactiveEmployees = employees.filter(e => !e.isActive);
+
+
+
+    const totalSalary = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+    const averageSalary = total > 0 ? totalSalary / total : 0;
+
+    this.stats = {
+      total,
+      active: activeEmployees.length,
+      inactive: inactiveEmployees.length,
+      byPosition: [],
+      totalSalary,
+      averageSalary
+    };
+
+    console.log(this.stats);
+  
+    // Atualiza cargos disponíveis
+    this.availablePositions = [...new Set(employees.map(e => e.position))].sort();
+    this.availablePositions.push('Novo Cargo');
+  }
+
 
   ngOnDestroy() {
     this.destroy$.next();
@@ -83,28 +106,32 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   }
 
   loadEmployees() {
-    this.employeeService.getEmployees()
+    this.apiService.getAll('employees')
       .pipe(takeUntil(this.destroy$))
       .subscribe(employees => {
         this.employees = employees;
+        console.log(employees);
+        this.loadStats()
         this.applyFilters();
       });
   }
 
-  loadStats() {
-    this.employeeService.getEmployeeStats()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(stats => {
-        this.stats = stats;
-      });
-  }
+  // loadStats() {
+  //   this.employeeService.getEmployeeStats()
+  //     .pipe(takeUntil(this.destroy$))
+  //     .subscribe(stats => {
+  //       this.stats = stats;
+  //     });
+  // }
 
   loadAvailablePositions() {
-    this.employeeService.getAvailablePositions()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(positions => {
-        this.availablePositions = positions;
-      });
+
+    const positions = [...new Set(this.employees.map(e => e.position))];
+    console.log(positions);
+    positions.push('Novo Cargo');
+    return of(positions.sort());
+
+
   }
 
   applyFilters() {
@@ -112,7 +139,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
 
     // Filtro por termo de busca
     if (this.searchTerm) {
-      filtered = filtered.filter(e => 
+      filtered = filtered.filter(e =>
         e.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         e.cpf.includes(this.searchTerm) ||
         e.position.toLowerCase().includes(this.searchTerm.toLowerCase())
@@ -157,16 +184,16 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     this.isEditing = true;
     this.isCreating = false;
     this.selectedEmployee = employee;
-    
+
     this.employeeForm.patchValue({
       name: employee.name,
       cpf: employee.cpf,
       position: employee.position,
       phone: employee.phone,
       salary: employee.salary,
-      admissionDate: this.formatDateForInput(employee.admissionDate)
+      admissionDate: employee.admissionDate
     });
-    
+
     this.showForm = true;
   }
 
@@ -178,23 +205,28 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   saveEmployee() {
     if (this.employeeForm.valid) {
       const formValue = this.employeeForm.value;
-      
+
       if (this.isCreating) {
-        this.employeeService.createEmployee({
+
+        console.log('Creating employee...');
+
+        console.log('formValue:', formValue);
+
+        this.apiService.create('employees', {
           ...formValue,
           dismissalDate: null,
           isActive: true
         }).subscribe(() => {
           this.closeForm();
           this.loadEmployees();
-          this.loadStats();
+          // this.loadStats();
         });
       } else if (this.isEditing && this.selectedEmployee) {
-        this.employeeService.updateEmployee(this.selectedEmployee.id, formValue)
+        this.apiService.update('employees', this.selectedEmployee.id, formValue)
           .subscribe(() => {
             this.closeForm();
             this.loadEmployees();
-            this.loadStats();
+            // this.loadStats();
           });
       }
     }
@@ -211,7 +243,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   showDismissalModal(employee: Employee) {
     this.selectedEmployee = employee;
     this.dismissalForm.reset({
-      dismissalDate: this.formatDateForInput(new Date())
+      dismissalDate: new Date()
     });
     this.showDismissalForm = true;
   }
@@ -219,13 +251,13 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   dismissEmployee() {
     if (this.dismissalForm.valid && this.selectedEmployee) {
       const dismissalDate = new Date(this.dismissalForm.get('dismissalDate')?.value);
-      
-      this.employeeService.deactivateEmployee(this.selectedEmployee.id, dismissalDate)
-        .subscribe(() => {
-          this.closeDismissalForm();
-          this.loadEmployees();
-          this.loadStats();
-        });
+
+      // this.employeeService.deactivateEmployee(this.selectedEmployee.id, dismissalDate)
+      //   .subscribe(() => {
+      //     this.closeDismissalForm();
+      //     this.loadEmployees();
+      //     this.loadStats();
+      //   });
     }
   }
 
@@ -236,18 +268,19 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   }
 
   activateEmployee(employee: Employee) {
-    this.employeeService.activateEmployee(employee.id).subscribe(() => {
-      this.loadEmployees();
-      this.loadStats();
-    });
+    // this.employeeService.activateEmployee(employee.id).subscribe(() => {
+    //   this.loadEmployees();
+    //   this.loadStats();
+    // });
   }
 
-  formatDateForInput(date: Date): string {
-    return date.toISOString().split('T')[0];
-  }
+ 
 
   formatDate(date: Date): string {
-    return date.toLocaleDateString('pt-BR');
+    if (!date) return '';
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) return '';
+    return parsedDate.toLocaleDateString('pt-BR');
   }
 
   formatCurrency(value: number): string {
@@ -266,8 +299,8 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   }
 
   getServiceTime(employee: Employee): string {
-    return this.employeeService.calculateServiceTime(
-      employee.admissionDate, 
+    return this.calculateServiceTime(
+      employee.admissionDate,
       employee.dismissalDate
     );
   }
@@ -275,7 +308,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   getPositions(): string[] {
     return [
       'Lavador',
-      'Atendente', 
+      'Atendente',
       'Técnico',
       'Gerente',
       'Supervisor',
@@ -290,4 +323,29 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   getStatusText(employee: Employee): string {
     return employee.isActive ? 'Ativo' : 'Inativo';
   }
+
+  calculateServiceTime(admissionDate: any, dismissalDate?: any): string {
+    if (!admissionDate) return 'Data de admissão inválida';
+
+    const startDate = new Date(admissionDate);
+    if (isNaN(startDate.getTime())) return 'Data de admissão inválida';
+
+    const endDate = dismissalDate ? new Date(dismissalDate) : new Date();
+    if (dismissalDate && isNaN(endDate.getTime())) return 'Data de demissão inválida';
+
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const years = Math.floor(diffDays / 365);
+    const months = Math.floor((diffDays % 365) / 30);
+    const days = diffDays % 30;
+
+    let result = '';
+    if (years > 0) result += `${years} ano${years > 1 ? 's' : ''} `;
+    if (months > 0) result += `${months} mes${months > 1 ? 'es' : ''} `;
+    if (days > 0) result += `${days} dia${days > 1 ? 's' : ''}`;
+
+    return result.trim() || 'Menos de 1 dia';
+  }
+
 }

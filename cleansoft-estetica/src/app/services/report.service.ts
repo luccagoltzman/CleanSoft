@@ -14,7 +14,6 @@ import {
 } from '../models';
 import { CustomerService } from './customer.service';
 import { VehicleService } from './vehicle.service';
-import { EmployeeService } from './employee.service';
 import { ServiceService } from './service.service';
 import { ProductService } from './product.service';
 import { SaleService } from './sale.service';
@@ -28,7 +27,6 @@ export class ReportService {
   constructor(
     private customerService: CustomerService,
     private vehicleService: VehicleService,
-    private employeeService: EmployeeService,
     private serviceService: ServiceService,
     private productService: ProductService,
     private saleService: SaleService,
