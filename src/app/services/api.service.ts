@@ -14,7 +14,7 @@ export class ApiService {
   constructor(private http: HttpClient) { }
 
   private getHeaders(): HttpHeaders {
-    const token = localStorage.getItem('supabase_token');
+    // const token = localStorage.getItem('supabase_token');
     return new HttpHeaders({
       'apikey': environment.supabaseKey,
       'Authorization': environment.UserToken ? `Bearer ${environment.UserToken}` : `Bearer ${environment.supabaseKey}`,
@@ -22,18 +22,27 @@ export class ApiService {
     });
   }
 
-  getAll(table: string, params?: { [key: string]: any }): Observable<any> {
+  getAll(table: string, params?: { [key: string]: any }, embeds?: string[]): Observable<any> {
     let url = `${this.baseUrl}/${table}`;
 
+    const query = new URLSearchParams();
+
+    // adiciona params normais
     if (params) {
-      const query = new URLSearchParams();
       for (const key in params) {
         if (params[key] !== undefined && params[key] !== null) {
           query.set(key, params[key]);
         }
       }
-      url += `?${query.toString()}`;
     }
+
+    // adiciona joins/embeds
+    if (embeds && embeds.length) {
+      query.set('select', ['*', ...embeds].join(','));
+    }
+
+    const queryString = query.toString();
+    if (queryString) url += `?${queryString}`;
 
     return this.http.get(url, { headers: this.getHeaders() });
   }
@@ -43,16 +52,28 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/${table}?id=eq.${id}`, { headers: this.getHeaders() });
   }
 
+  getByColumn(table: string, column: string, value: any): Observable<any> {
+    return this.http.get(`${this.baseUrl}/${table}?${column}=eq.${value}`, { headers: this.getHeaders() });
+  }
+
+
   create(table: string, body: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/${table}`, body, { headers: this.getHeaders() });
+    const headers = this.getHeaders().set('Prefer', 'return=representation');
+    return this.http.post(`${this.baseUrl}/${table}`, body, { headers });
   }
 
   update(table: string, id: number, body: any): Observable<any> {
-    return this.http.patch(`${this.baseUrl}/${table}?id=eq.${id}`, body, { headers: this.getHeaders() });
+    const headers = this.getHeaders().set('Prefer', 'return=representation');
+    return this.http.patch(`${this.baseUrl}/${table}?id=eq.${id}`, body, { headers });
   }
+
 
   delete(table: string, id: number): Observable<any> {
     return this.http.delete(`${this.baseUrl}/${table}?id=eq.${id}`, { headers: this.getHeaders() });
+  }
+
+  deleteByColumn(table: string, column: string, value: any): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/${table}?${column}=eq.${value}`, { headers: this.getHeaders() });
   }
 
   signUp(email: string, password: string): Observable<any> {
@@ -103,13 +124,13 @@ export class ApiService {
     ).pipe(
       tap((res: any) => {
         if (res?.access_token) {
-          localStorage.setItem('supabase_token', res.access_token);
+          // localStorage.setItem('supabase_token', res.access_token);
         }
       })
     );
   }
 
   signOut(): void {
-    localStorage.removeItem('supabase_token');
+    // localStorage.removeItem('supabase_token');
   }
 }

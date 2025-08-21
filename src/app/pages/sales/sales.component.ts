@@ -2,12 +2,9 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { SaleService } from '../../services/sale.service';
-import { CustomerService } from '../../services/customer.service';
-import { VehicleService } from '../../services/vehicle.service';
-import { ProductService } from '../../services/product.service';
-import { ServiceService } from '../../services/service.service';
 import { Sale, SaleItem, PaymentMethod, PaymentStatus, Customer, Vehicle, Product, Service } from '../../models';
-import { Subject, takeUntil, combineLatest } from 'rxjs';
+import { Subject, takeUntil, combineLatest, forkJoin } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-sales',
@@ -35,7 +32,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   endDateFilter = '';
 
   saleForm: FormGroup;
-  
+
   stats: {
     totalSales: number;
     totalRevenue: number;
@@ -44,13 +41,13 @@ export class SalesComponent implements OnInit, OnDestroy {
     pendingSales: number;
     cancelledSales: number;
   } = {
-    totalSales: 0,
-    totalRevenue: 0,
-    averageTicket: 0,
-    paidSales: 0,
-    pendingSales: 0,
-    cancelledSales: 0
-  };
+      totalSales: 0,
+      totalRevenue: 0,
+      averageTicket: 0,
+      paidSales: 0,
+      pendingSales: 0,
+      cancelledSales: 0
+    };
 
   paymentMethods = Object.values(PaymentMethod);
   paymentStatuses = Object.values(PaymentStatus);
@@ -59,10 +56,7 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   constructor(
     private saleService: SaleService,
-    private customerService: CustomerService,
-    private vehicleService: VehicleService,
-    private productService: ProductService,
-    private serviceService: ServiceService,
+    private api: ApiService,
     private fb: FormBuilder
   ) {
     this.saleForm = this.fb.group({
@@ -78,20 +72,10 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.loadSales();
     this.loadCustomers();
-    this.loadVehicles();
     this.loadProducts();
-    this.loadServices();
-    this.loadStats();
-
-    // Observar mudanças nas vendas
-    this.saleService.getSales()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(sales => {
-        this.sales = sales;
-        this.applyFilters();
-      });
+    this.loadSales();
+    // this.loadStats();
   }
 
   ngOnDestroy() {
@@ -100,16 +84,25 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   loadSales() {
-    this.saleService.getSales()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(sales => {
-        this.sales = sales;
-        this.applyFilters();
+
+    this.api.getAll('sales', undefined, ['sale_items(*)']).subscribe((sales: any[]) => {
+      const formattedSales = sales.map(sale => ({
+        ...sale,
+        items: sale.sale_items,
+      })).map(sale => {
+        delete sale.sale_items;
+        return sale;
       });
+      this.sales = formattedSales;
+      console.log('Vendas com items renomeados:', formattedSales);
+      this.applyFilters();
+    });
+
+
   }
 
   loadCustomers() {
-    this.customerService.getCustomers()
+    this.api.getAll('clients')
       .pipe(takeUntil(this.destroy$))
       .subscribe(customers => {
         this.customers = customers;
@@ -117,7 +110,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   loadVehicles() {
-    this.vehicleService.getVehicles()
+    this.api.getByColumn('vehicles', 'customerId', this.saleForm.get('customerId')?.value)
       .pipe(takeUntil(this.destroy$))
       .subscribe(vehicles => {
         this.vehicles = vehicles;
@@ -125,20 +118,14 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   loadProducts() {
-    this.productService.getProducts()
+    this.api.getAll('products')
       .pipe(takeUntil(this.destroy$))
       .subscribe(products => {
         this.products = products;
       });
   }
 
-  loadServices() {
-    this.serviceService.getServices()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(services => {
-        this.services = services;
-      });
-  }
+
 
   loadStats() {
     this.saleService.getSalesReport()
@@ -156,8 +143,8 @@ export class SalesComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(s => {
         const customer = this.customers.find(c => c.id === s.customerId);
         return customer?.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-               customer?.phone.includes(this.searchTerm) ||
-               s.notes?.toLowerCase().includes(this.searchTerm.toLowerCase());
+          customer?.phone.includes(this.searchTerm) ||
+          s.notes?.toLowerCase().includes(this.searchTerm.toLowerCase());
       });
     }
 
@@ -168,9 +155,9 @@ export class SalesComponent implements OnInit, OnDestroy {
 
     // Filtro por status
     if (this.statusFilter !== 'all') {
-      const status = this.statusFilter === 'paid' ? PaymentStatus.PAID : 
-                     this.statusFilter === 'pending' ? PaymentStatus.PENDING : 
-                     PaymentStatus.CANCELLED;
+      const status = this.statusFilter === 'paid' ? PaymentStatus.PAID :
+        this.statusFilter === 'pending' ? PaymentStatus.PENDING :
+          PaymentStatus.CANCELLED;
       filtered = filtered.filter(s => s.paymentStatus === status);
     }
 
@@ -232,10 +219,10 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.isEditing = true;
     this.isCreating = false;
     this.selectedSale = sale;
-    
+
     this.clearItems();
     sale.items.forEach(item => this.addItem(item));
-    
+
     this.saleForm.patchValue({
       customerId: sale.customerId,
       vehicleId: sale.vehicleId,
@@ -245,7 +232,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       notes: sale.notes,
       date: sale.date
     });
-    
+
     this.showForm = true;
   }
 
@@ -255,40 +242,54 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   saveSale() {
+    console.log(this.saleForm.valid && this.items.length > 0);
+
     if (this.saleForm.valid && this.items.length > 0) {
       const formValue = this.saleForm.value;
-      const items = this.items.value.map((item: any) => ({
-        saleId: 0, // Será definido pelo serviço
-        type: item.type,
-        productId: item.type === 'product' ? item.productId : undefined,
-        serviceId: item.type === 'service' ? item.serviceId : undefined,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discount: item.discount || 0,
-        notes: item.notes
-      }));
 
-      const { subtotal, total } = this.saleService.calculateSaleTotal(items, formValue.discount);
-      
       const saleData = {
-        ...formValue,
-        items,
-        subtotal,
-        total,
-        createdBy: 1 // ID do usuário logado
+        customerId: formValue.customerId,
+        vehicleId: formValue.vehicleId,
+        total: this.calculateSaleTotal(),
+        discount: formValue.discount || 0,
+        paymentMethod: formValue.paymentMethod,
+        created_at: new Date()
+      };
+
+      const saveItems = (saleId: number) => {
+        const saleItemsData = this.items.value.map((item: any) => ({
+          saleId: saleId,
+          productId: item.type === 'product' ? item.productId : null,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount: item.discount || 0,
+          notes: item.notes
+        }));
+
+        return forkJoin(
+          saleItemsData.map((itemData: any) => this.api.create('sale_items', itemData))
+        );
       };
 
       if (this.isCreating) {
-        this.saleService.createSale(saleData).subscribe(() => {
-          this.closeForm();
-          this.loadSales();
-          this.loadStats();
+        this.api.create('sales', saleData).subscribe((sale: any) => {
+          saveItems(sale[0].id).subscribe(() => {
+            console.log('Venda e itens criados:', sale);
+            this.closeForm();
+            this.loadSales();
+            this.loadStats();
+          });
         });
       } else if (this.isEditing && this.selectedSale) {
-        this.saleService.updateSale(this.selectedSale.id, saleData).subscribe(() => {
-          this.closeForm();
-          this.loadSales();
-          this.loadStats();
+        this.api.update('sales', this.selectedSale.id, saleData).subscribe(() => {
+          this.api.deleteByColumn('sale_items', 'saleId', this.selectedSale!.id).subscribe(() => {
+            saveItems(this.selectedSale!.id).subscribe(() => {
+              console.log('Venda atualizada e itens substituídos');
+              this.closeForm();
+              this.loadSales();
+              this.loadStats();
+            });
+          });
         });
       }
     }
@@ -400,9 +401,6 @@ export class SalesComponent implements OnInit, OnDestroy {
     }).format(value);
   }
 
-  formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('pt-BR').format(date);
-  }
 
   // Métodos para cálculo de totais
   calculateItemTotal(item: any): number {
@@ -426,7 +424,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   onItemTypeChange(index: number) {
     const item = this.items.at(index);
     const type = item.get('type')?.value;
-    
+
     if (type === 'product') {
       item.patchValue({ serviceId: '' });
     } else {
@@ -438,7 +436,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     const item = this.items.at(index);
     const productId = item.get('productId')?.value;
     const product = this.products.find(p => p.id === productId);
-    
+
     if (product) {
       item.patchValue({ unitPrice: product.salePrice });
     }
@@ -448,7 +446,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     const item = this.items.at(index);
     const serviceId = item.get('serviceId')?.value;
     const service = this.services.find(s => s.id === serviceId);
-    
+
     if (service) {
       item.patchValue({ unitPrice: service.basePrice });
     }
@@ -461,5 +459,8 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   onCustomerChange() {
     this.saleForm.patchValue({ vehicleId: '' });
+
+    this.loadVehicles();
+
   }
 }

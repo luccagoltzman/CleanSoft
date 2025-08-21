@@ -305,17 +305,17 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   toggleVehicleStatus(vehicle: Vehicle) {
-    // if (vehicle.isActive) {
-    //   this.vehicleService.deactivateVehicle(vehicle.id).subscribe(() => {
-    //     this.loadVehicles();
-    //     this.loadStats();
-    //   });
-    // } else {
-    //   this.vehicleService.activateVehicle(vehicle.id).subscribe(() => {
-    //     this.loadVehicles();
-    //     this.loadStats();
-    //   });
-    // }
+    if (vehicle.isActive) {
+      this.api.update('vehicles', vehicle.id, { isActive: false }).subscribe(() => {
+        this.loadVehicles();
+        this.loadStats();
+      });
+    } else {
+      this.api.update('vehicles', vehicle.id, { isActive: true }).subscribe(() => {
+        this.loadVehicles();
+        this.loadStats();
+      });
+    }
   }
 
   getCustomerName(customerId: number): string {

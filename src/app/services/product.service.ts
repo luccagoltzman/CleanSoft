@@ -124,8 +124,6 @@ export class ProductService {
       quantity: 100,
       reason: StockMovementReason.PURCHASE,
       unitPrice: 15.00,
-      totalValue: 1500.00,
-      supplierId: 1,
       notes: 'Compra inicial',
       date: new Date('2023-01-15'),
       createdAt: new Date('2023-01-15')
@@ -137,7 +135,6 @@ export class ProductService {
       quantity: 50,
       reason: StockMovementReason.SALE,
       unitPrice: 25.00,
-      totalValue: 1250.00,
       notes: 'Vendas realizadas',
       date: new Date('2023-02-01'),
       createdAt: new Date('2023-02-01')

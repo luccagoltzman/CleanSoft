@@ -7,7 +7,7 @@ export interface Service {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  additionalServices?: AdditionalService[];
+  services_with_addons?: any[];
 }
 
 export enum ServiceCategory {

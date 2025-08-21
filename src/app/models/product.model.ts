@@ -35,8 +35,6 @@ export interface StockMovement {
   quantity: number;
   reason: StockMovementReason;
   unitPrice: number;
-  totalValue: number;
-  supplierId?: number;
   notes?: string;
   date: Date;
   createdAt: Date;

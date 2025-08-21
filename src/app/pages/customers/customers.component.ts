@@ -175,7 +175,17 @@ export class CustomersComponent implements OnInit, OnDestroy {
   }
 
   toggleCustomerStatus(customer: Customer) {
-   
+    if (customer.isActive) {
+      this.api.update('clients',customer.id,{isActive: false}).subscribe(() => {
+        this.loadCustomers();
+        this.loadStats();
+      });
+    } else {
+      this.api.update('clients',customer.id,{isActive: true}).subscribe(() => {
+        this.loadCustomers();
+        this.loadStats();
+      });
+    }
   }
 
   getDocumentMask(): string {

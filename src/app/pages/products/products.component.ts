@@ -2,8 +2,9 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
-import { Product, Supplier, StockMovement, StockMovementReason, ProductSearchParams } from '../../models';
-import { Subject, takeUntil } from 'rxjs';
+import { Product, Supplier, StockMovementReason } from '../../models';
+import { of, Subject, takeUntil } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-products',
@@ -32,7 +33,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
   productForm: FormGroup;
   supplierForm: FormGroup;
   stockMovementForm: FormGroup;
-  
+
   stats: {
     totalProducts: number;
     activeProducts: number;
@@ -41,14 +42,14 @@ export class ProductsComponent implements OnInit, OnDestroy {
     totalValue: number;
     averageValue: number;
   } = {
-    totalProducts: 0,
-    activeProducts: 0,
-    lowStockProducts: 0,
-    outOfStockProducts: 0,
-    totalValue: 0,
-    averageValue: 0
-  };
-  
+      totalProducts: 0,
+      activeProducts: 0,
+      lowStockProducts: 0,
+      outOfStockProducts: 0,
+      totalValue: 0,
+      averageValue: 0
+    };
+
   availableCategories: string[] = [];
   availableUnits: string[] = [];
   stockMovementReasons = Object.values(StockMovementReason);
@@ -56,8 +57,8 @@ export class ProductsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
-    private productService: ProductService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private api: ApiService
   ) {
     this.productForm = this.fb.group({
       category: ['', Validators.required],
@@ -87,7 +88,6 @@ export class ProductsComponent implements OnInit, OnDestroy {
       quantity: ['', [Validators.required, Validators.min(1)]],
       reason: ['', Validators.required],
       unitPrice: ['', [Validators.required, Validators.min(0)]],
-      supplierId: [''],
       notes: ['']
     });
   }
@@ -95,17 +95,6 @@ export class ProductsComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadProducts();
     this.loadSuppliers();
-    this.loadStats();
-    this.loadAvailableCategories();
-    this.loadAvailableUnits();
-
-    // Observar mudanças nos produtos
-    this.productService.getProducts()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(products => {
-        this.products = products;
-        this.applyFilters();
-      });
   }
 
   ngOnDestroy() {
@@ -114,16 +103,19 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
   loadProducts() {
-    this.productService.getProducts()
+    this.api.getAll('products')
       .pipe(takeUntil(this.destroy$))
       .subscribe(products => {
         this.products = products;
         this.applyFilters();
+        this.loadStats();
+        this.loadAvailableCategories();
+        this.loadAvailableUnits()
       });
   }
 
   loadSuppliers() {
-    this.productService.getSuppliers()
+    this.api.getAll('suppliers')
       .pipe(takeUntil(this.destroy$))
       .subscribe(suppliers => {
         this.suppliers = suppliers;
@@ -131,27 +123,45 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
   loadStats() {
-    this.productService.getStockReport()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(stats => {
-        this.stats = stats;
-      });
+    if (!this.products || this.products.length === 0) {
+      this.stats = {
+        totalProducts: 0,
+        activeProducts: 0,
+        lowStockProducts: 0,
+        outOfStockProducts: 0,
+        totalValue: 0,
+        averageValue: 0
+      };
+      return;
+    }
+
+    const totalProducts = this.products.length;
+    const activeProducts = this.products.filter(p => p.isActive).length;
+    const lowStockProducts = this.products.filter(p => p.currentStock > 0 && p.currentStock <= p.minStock).length;
+    const outOfStockProducts = this.products.filter(p => p.currentStock === 0).length;
+    const totalValue = this.products.reduce((sum, p) => sum + (p.currentStock * p.costPrice), 0);
+    const averageValue = totalProducts ? totalValue / totalProducts : 0;
+
+    this.stats = {
+      totalProducts,
+      activeProducts,
+      lowStockProducts,
+      outOfStockProducts,
+      totalValue,
+      averageValue
+    };
   }
 
   loadAvailableCategories() {
-    this.productService.getAvailableCategories()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(categories => {
-        this.availableCategories = categories;
-      });
+
+    const categories = [...new Set(this.products.map(p => p.category))];
+    this.availableCategories = categories;
+    console.log(categories);
+
   }
 
   loadAvailableUnits() {
-    this.productService.getAvailableUnits()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(units => {
-        this.availableUnits = units;
-      });
+    this.availableUnits = [...new Set(this.products.map(p => p.unit))];;
   }
 
   applyFilters() {
@@ -224,7 +234,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
     this.isEditing = true;
     this.isCreating = false;
     this.selectedProduct = product;
-    
+
     this.productForm.patchValue({
       category: product.category,
       name: product.name,
@@ -237,7 +247,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
       minStock: product.minStock,
       supplierId: product.supplierId
     });
-    
+
     this.showForm = true;
   }
 
@@ -249,9 +259,9 @@ export class ProductsComponent implements OnInit, OnDestroy {
   saveProduct() {
     if (this.productForm.valid) {
       const formValue = this.productForm.value;
-      
+
       if (this.isCreating) {
-        this.productService.createProduct({
+        this.api.create('products', {
           ...formValue,
           isActive: true
         }).subscribe(() => {
@@ -260,7 +270,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
           this.loadStats();
         });
       } else if (this.isEditing && this.selectedProduct) {
-        this.productService.updateProduct(this.selectedProduct.id, formValue).subscribe(() => {
+        this.api.update('products', this.selectedProduct.id, formValue).subscribe(() => {
           this.closeForm();
           this.loadProducts();
           this.loadStats();
@@ -285,8 +295,8 @@ export class ProductsComponent implements OnInit, OnDestroy {
   saveSupplier() {
     if (this.supplierForm.valid) {
       const formValue = this.supplierForm.value;
-      
-      this.productService.createSupplier({
+
+      this.api.create('suppliers', {
         ...formValue,
         isActive: true
       }).subscribe(() => {
@@ -309,11 +319,9 @@ export class ProductsComponent implements OnInit, OnDestroy {
   saveStockMovement() {
     if (this.stockMovementForm.valid) {
       const formValue = this.stockMovementForm.value;
-      
-      this.productService.createStockMovement({
-        ...formValue,
-        totalValue: formValue.quantity * formValue.unitPrice,
-        date: new Date()
+
+      this.api.create('cash_movements', {
+        ...formValue
       }).subscribe(() => {
         this.closeStockMovementForm();
         this.loadProducts();
@@ -328,17 +336,17 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
   deactivateProduct(product: Product) {
-    this.productService.deactivateProduct(product.id).subscribe(() => {
-      this.loadProducts();
-      this.loadStats();
-    });
+    // this.productService.deactivateProduct(product.id).subscribe(() => {
+    //   this.loadProducts();
+    //   this.loadStats();
+    // });
   }
 
   activateProduct(product: Product) {
-    this.productService.activateProduct(product.id).subscribe(() => {
-      this.loadProducts();
-      this.loadStats();
-    });
+    // this.productService.activateProduct(product.id).subscribe(() => {
+    //   this.loadProducts();
+    //   this.loadStats();
+    // });
   }
 
   getSupplierName(supplierId: number): string {

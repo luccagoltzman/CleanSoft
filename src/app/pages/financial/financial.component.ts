@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FinancialService } from '../../services/financial.service';
-import { CustomerService } from '../../services/customer.service';
 import { ProductService } from '../../services/product.service';
 import { 
   AccountPayable, 
@@ -15,6 +14,7 @@ import {
   FinancialSearchParams 
 } from '../../models';
 import { Subject, takeUntil } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-financial',
@@ -78,7 +78,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
 
   constructor(
     private financialService: FinancialService,
-    private customerService: CustomerService,
+    private api: ApiService,
     private productService: ProductService,
     private fb: FormBuilder
   ) {
@@ -140,7 +140,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
   }
 
   loadCustomers() {
-    this.customerService.getCustomers()
+    this.api.getAll('clients')
       .pipe(takeUntil(this.destroy$))
       .subscribe(customers => {
         this.customers = customers;

@@ -14,7 +14,7 @@ export class ServiceService {
       category: ServiceCategory.SIMPLE,
       basePrice: 25.00,
       isActive: true,
-      additionalServices: [],
+      services_with_addons: [],
       createdAt: new Date('2023-01-15'),
       updatedAt: new Date('2023-01-15')
     },
@@ -25,7 +25,7 @@ export class ServiceService {
       category: ServiceCategory.DETAILED,
       basePrice: 45.00,
       isActive: true,
-      additionalServices: [],
+      services_with_addons: [],
       createdAt: new Date('2023-01-15'),
       updatedAt: new Date('2023-01-15')
     },
@@ -36,7 +36,7 @@ export class ServiceService {
       category: ServiceCategory.TECHNICAL,
       basePrice: 80.00,
       isActive: true,
-      additionalServices: [],
+      services_with_addons: [],
       createdAt: new Date('2023-01-15'),
       updatedAt: new Date('2023-01-15')
     },
@@ -47,7 +47,7 @@ export class ServiceService {
       category: ServiceCategory.TECHNICAL,
       basePrice: 120.00,
       isActive: true,
-      additionalServices: [],
+      services_with_addons: [],
       createdAt: new Date('2023-01-15'),
       updatedAt: new Date('2023-01-15')
     },
@@ -58,7 +58,7 @@ export class ServiceService {
       category: ServiceCategory.TECHNICAL,
       basePrice: 60.00,
       isActive: true,
-      additionalServices: [],
+      services_with_addons: [],
       createdAt: new Date('2023-01-15'),
       updatedAt: new Date('2023-01-15')
     }
@@ -323,28 +323,8 @@ export class ServiceService {
   }
 
   // Calcular preço total do serviço com adicionais
-  calculateServiceTotal(service: Service): number {
-    let total = service.basePrice;
+  calculateServiceTotal(service: Service) {
+     
     
-    if (service.additionalServices && service.additionalServices.length > 0) {
-      service.additionalServices.forEach(additionalService => {
-        if (additionalService.isActive) {
-          total += additionalService.additionalPrice;
-        }
-      });
-    }
-    
-    return total;
-  }
-
-  // Obter serviços com preço total
-  getServicesWithTotal(): Observable<ServiceWithTotal[]> {
-    const servicesWithTotal = this.services.map(service => ({
-      service,
-      totalPrice: this.calculateServiceTotal(service),
-      additionalServices: service.additionalServices || []
-    }));
-    
-    return of(servicesWithTotal);
   }
 }

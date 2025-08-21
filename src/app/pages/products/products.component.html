@@ -584,15 +584,7 @@
             </div>
           </div>
           
-          <div class="form-group">
-            <label for="movementSupplierId">Fornecedor</label>
-            <select id="movementSupplierId" formControlName="supplierId" class="form-select">
-              <option value="">Selecione um fornecedor (opcional)</option>
-              <option *ngFor="let supplier of suppliers" [value]="supplier.id">
-                {{ supplier.name }}
-              </option>
-            </select>
-          </div>
+      
         </div>
         
         <div class="form-group">

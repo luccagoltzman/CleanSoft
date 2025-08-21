@@ -240,7 +240,7 @@
         </div>
         <div class="detail-row">
           <label>Documento:</label>
-          <span class="document-badge" [class]="selectedCustomer.documentType?.toLowerCase() || ''">
+          <span class="document-badge" [class]="selectedCustomer.documentType?.toLowerCase() ">
             {{ formatDocument(selectedCustomer.document, selectedCustomer.documentType) }}
           </span>
         </div>

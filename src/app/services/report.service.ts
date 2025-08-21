@@ -13,7 +13,6 @@ import {
   ReportConfig
 } from '../models';
 import { CustomerService } from './customer.service';
-import { VehicleService } from './vehicle.service';
 import { ServiceService } from './service.service';
 import { ProductService } from './product.service';
 import { SaleService } from './sale.service';
@@ -26,7 +25,6 @@ export class ReportService {
 
   constructor(
     private customerService: CustomerService,
-    private vehicleService: VehicleService,
     private serviceService: ServiceService,
     private productService: ProductService,
     private saleService: SaleService,

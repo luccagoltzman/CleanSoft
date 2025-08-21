@@ -710,3 +710,8 @@
     align-items: stretch;
   }
 }
+.btn-disabled {
+  background-color: #ccc; /* cinza */
+  cursor: not-allowed;
+  opacity: 0.6;
+}

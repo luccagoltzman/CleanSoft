@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ServiceService } from '../../services/service.service';
 import { Service, ServiceCategory, AdditionalService, ServiceSearchParams } from '../../models';
-import { Subject, takeUntil } from 'rxjs';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-services',
@@ -23,7 +23,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
   searchTerm = '';
   categoryFilter = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
-  
+
   serviceForm: FormGroup;
   additionalServiceForm: FormGroup;
   stats: {
@@ -33,22 +33,22 @@ export class ServicesComponent implements OnInit, OnDestroy {
     byCategory: { category: ServiceCategory; count: number }[];
     totalRevenue: number;
     averagePrice: number;
-  } = { 
-    total: 0, 
-    active: 0, 
-    inactive: 0, 
-    byCategory: [], 
-    totalRevenue: 0, 
-    averagePrice: 0 
-  };
+  } = {
+      total: 0,
+      active: 0,
+      inactive: 0,
+      byCategory: [],
+      totalRevenue: 0,
+      averagePrice: 0
+    };
   availableCategories: ServiceCategory[] = [];
   additionalServices: AdditionalService[] = [];
   selectedAdditionalServices: number[] = [];
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
-    private serviceService: ServiceService,
+    private api: ApiService,
     private fb: FormBuilder
   ) {
     this.serviceForm = this.fb.group({
@@ -56,7 +56,6 @@ export class ServicesComponent implements OnInit, OnDestroy {
       description: ['', [Validators.required, Validators.minLength(10)]],
       category: ['', Validators.required],
       basePrice: ['', [Validators.required, Validators.min(0)]],
-      additionalServices: [[]]
     });
 
     this.additionalServiceForm = this.fb.group({
@@ -71,14 +70,8 @@ export class ServicesComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadAvailableCategories();
     this.loadAdditionalServices();
-    
-    // Observar mudanças nos serviços
-    this.serviceService.getServices()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(services => {
-        this.services = services;
-        this.applyFilters();
-      });
+
+
   }
 
   ngOnDestroy() {
@@ -87,7 +80,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
   }
 
   loadServices() {
-    this.serviceService.getServices()
+    this.api.getAll('services', { isActive: 'eq.true' }, ['services_with_addons!left(serviceIdOddons(*))'])
       .pipe(takeUntil(this.destroy$))
       .subscribe(services => {
         this.services = services;
@@ -96,23 +89,21 @@ export class ServicesComponent implements OnInit, OnDestroy {
   }
 
   loadStats() {
-    this.serviceService.getServiceStats()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(stats => {
-        this.stats = stats;
-      });
+    // this.serviceService.getServiceStats()
+    //   .pipe(takeUntil(this.destroy$))
+    //   .subscribe(stats => {
+    //     this.stats = stats;
+    //   });
   }
 
   loadAvailableCategories() {
-    this.serviceService.getAvailableCategories()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(categories => {
-        this.availableCategories = categories;
-      });
+    this.availableCategories = (Object.values(ServiceCategory));
+    return this.availableCategories;
+
   }
 
   loadAdditionalServices() {
-    this.serviceService.getAdditionalServices()
+    this.api.getAll('service_addons')
       .pipe(takeUntil(this.destroy$))
       .subscribe(additionalServices => {
         this.additionalServices = additionalServices;
@@ -124,7 +115,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
 
     // Filtro por termo de busca
     if (this.searchTerm) {
-      filtered = filtered.filter(s => 
+      filtered = filtered.filter(s =>
         s.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         s.description.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
@@ -169,50 +160,81 @@ export class ServicesComponent implements OnInit, OnDestroy {
     this.isEditing = true;
     this.isCreating = false;
     this.selectedService = service;
-    
+
+    // Extrai os IDs dos addons
+    this.selectedAdditionalServices = (service.services_with_addons || [])
+      .map((item: any) => item.serviceIdOddons.id);
+
+    // Preenche o form
     this.serviceForm.patchValue({
       name: service.name,
       description: service.description,
       category: service.category,
       basePrice: service.basePrice,
-      additionalServices: service.additionalServices || []
+      additionalServices: this.selectedAdditionalServices // IDs já extraídos
     });
-    
-    this.selectedAdditionalServices = [];
+
+    console.log('Serviço selecionado para edição:', service);
+    console.log('Addons selecionados:', this.selectedAdditionalServices);
+
     this.showForm = true;
   }
+
 
   viewService(service: Service) {
     this.selectedService = service;
     this.showForm = false;
   }
 
+
   saveService() {
-    if (this.serviceForm.valid) {
-      const formValue = this.serviceForm.value;
-      
-      if (this.isCreating) {
-        this.serviceService.createService({
-          ...formValue,
-          additionalServices: [],
-          isActive: true
-        }).subscribe(() => {
+    if (!this.serviceForm.valid) return;
+
+    const formValue = this.serviceForm.value;
+
+    if (this.isCreating) {
+      console.log('Criando serviço:', formValue);
+
+      this.api.create('services', { ...formValue, isActive: true }).subscribe((services: any[]) => {
+        const service = services[0];
+
+        const addons = this.selectedAdditionalServices.map((addonId: any) => ({
+          serviceID: service.id,
+          serviceIdOddons: addonId
+        }));
+
+        this.api.create('services_with_addons', addons).subscribe((res: any) => {
+          console.log('Addons criados:', res);
+
           this.closeForm();
           this.loadServices();
           this.loadStats();
         });
-      } else if (this.isEditing && this.selectedService) {
-        this.serviceService.updateService(this.selectedService.id, {
-          ...formValue,
-          additionalServices: []
-        }).subscribe(() => {
-          this.closeForm();
-          this.loadServices();
-          this.loadStats();
+      });
+    } else if (this.isEditing && this.selectedService) {
+
+      this.api.update('services', this.selectedService.id, formValue).subscribe((services: any[]) => {
+        // Primeiro deleta os addons antigos
+        this.api.deleteByColumn(`services_with_addons`, 'serviceID', this.selectedService!.id).subscribe(() => {
+          const addons = this.selectedAdditionalServices.map((addonId: any) => ({
+            serviceID: this.selectedService!.id,
+            serviceIdOddons: addonId
+          }));
+
+
+          this.api.create('services_with_addons', addons).subscribe((res: any) => {
+            console.log('Addons criados:', res);
+
+            this.closeForm();
+            this.loadServices();
+            this.loadStats();
+          });
         });
-      }
+      });
     }
   }
+
+
 
   closeForm() {
     this.showForm = false;
@@ -231,10 +253,9 @@ export class ServicesComponent implements OnInit, OnDestroy {
   saveAdditionalService() {
     if (this.additionalServiceForm.valid) {
       const formValue = this.additionalServiceForm.value;
-      
-      this.serviceService.createAdditionalService({
+
+      this.api.create('service_addons', {
         ...formValue,
-        serviceId: 1, // Por enquanto, associando ao primeiro serviço
         isActive: true
       }).subscribe(() => {
         this.closeAdditionalServiceForm();
@@ -262,14 +283,14 @@ export class ServicesComponent implements OnInit, OnDestroy {
   }
 
   deactivateService(service: Service) {
-    this.serviceService.deactivateService(service.id).subscribe(() => {
+    this.api.update('service',service.id,{isActive: false}).subscribe(() => {
       this.loadServices();
       this.loadStats();
     });
   }
 
   activateService(service: Service) {
-    this.serviceService.activateService(service.id).subscribe(() => {
+    this.api.update('service',service.id,{isActive: true}).subscribe(() => {
       this.loadServices();
       this.loadStats();
     });
@@ -309,28 +330,33 @@ export class ServicesComponent implements OnInit, OnDestroy {
   }
 
   getAdditionalServicesText(service: Service): string {
-    if (!service.additionalServices || service.additionalServices.length === 0) {
-      return 'Nenhum';
+
+    if (!service.services_with_addons || service.services_with_addons.length === 0) {
+      return 'Nenhum adicional';
     }
-    
-    const additionalNames = service.additionalServices
-      .map(additional => additional.name)
+
+    const additionalNames = service.services_with_addons
+      .map(additional => {
+        return additional.serviceIdOddons?.name || additional.name || '';
+      })
+      .filter(name => name)
       .join(', ');
-    
-    return additionalNames || 'Nenhum';
+
+    return additionalNames || 'Nenhum adicional';
   }
+
 
   calculateServiceTotal(service: Service): number {
     let total = service.basePrice;
-    
-    if (service.additionalServices && service.additionalServices.length > 0) {
-      service.additionalServices.forEach(additional => {
+
+    if (service.services_with_addons && service.services_with_addons.length > 0) {
+      service.services_with_addons.forEach(additional => {
         if (additional.isActive) {
           total += additional.additionalPrice;
         }
       });
     }
-    
+
     return total;
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, BehaviorSubject } from 'rxjs';
-import { Sale, SaleItem, PaymentMethod, PaymentStatus, SaleSearchParams, SaleReport, Customer, Vehicle, Product, Service } from '../models';
+import { Sale, SaleItem, PaymentMethod, PaymentStatus, SaleSearchParams, SaleReport } from '../models';
 
 @Injectable({
   providedIn: 'root'
@@ -281,9 +281,5 @@ export class SaleService {
     return subtotal - (item.discount || 0);
   }
 
-  calculateSaleTotal(items: Omit<SaleItem, 'id' | 'totalPrice'>[], discount: number = 0): { subtotal: number; total: number } {
-    const subtotal = items.reduce((sum, item) => sum + this.calculateItemTotal(item), 0);
-    const total = subtotal - discount;
-    return { subtotal, total };
-  }
+
 }

@@ -93,7 +93,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     };
 
     console.log(this.stats);
-  
+
     // Atualiza cargos disponíveis
     this.availablePositions = [...new Set(employees.map(e => e.position))].sort();
     this.availablePositions.push('Novo Cargo');
@@ -242,10 +242,13 @@ export class EmployeesComponent implements OnInit, OnDestroy {
 
   showDismissalModal(employee: Employee) {
     this.selectedEmployee = employee;
-    this.dismissalForm.reset({
-      dismissalDate: new Date()
+    
+    this.apiService.update('employees', employee.id, {
+      isActive: false, dismissalDate: new Date()
+    }).subscribe(() => {
+      this.loadEmployees();
+      this.loadStats();
     });
-    this.showDismissalForm = true;
   }
 
   dismissEmployee() {
@@ -274,7 +277,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     // });
   }
 
- 
+
 
   formatDate(date: Date): string {
     if (!date) return '';
