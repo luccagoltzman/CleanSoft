@@ -23,6 +23,28 @@
   height: 64px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.mobile-menu-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+  display: none;
+}
+
+.mobile-menu-btn:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
 .logo-section .app-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -101,6 +123,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 /* Sidebar */
@@ -194,6 +217,25 @@
   transform: rotate(180deg);
 }
 
+/* Mobile Overlay */
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.mobile-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* Content Area */
 .content-area {
   flex: 1;
@@ -204,6 +246,10 @@
 
 /* Responsividade */
 @media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: block;
+  }
+  
   .sidebar {
     position: fixed;
     left: -280px;
@@ -211,9 +257,10 @@
     height: calc(100vh - 64px);
     z-index: 999;
     transition: left 0.3s ease;
+    width: 280px;
   }
   
-  .sidebar.show {
+  .sidebar.mobile-open {
     left: 0;
   }
   
@@ -232,6 +279,10 @@
   .content-area {
     padding: 15px;
   }
+  
+  .user-name {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -247,7 +298,12 @@
     font-size: 1.4rem;
   }
   
-  .user-name {
-    display: none;
+  .sidebar {
+    width: 100%;
+    left: -100%;
+  }
+  
+  .sidebar.mobile-open {
+    left: 0;
   }
 }

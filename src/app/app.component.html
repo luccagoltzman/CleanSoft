@@ -2,11 +2,16 @@
   <!-- Header -->
   <header class="app-header">
     <div class="header-content">
-      <div class="logo-section">
-        <h1 class="app-title">
-          <i class="fas fa-car-wash"></i>
-          CleanSoft Estética
-        </h1>
+      <div class="header-left">
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()" *ngIf="isMobile">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo-section">
+          <h1 class="app-title">
+            <i class="fas fa-car-wash"></i>
+            CleanSoft Estética
+          </h1>
+        </div>
       </div>
       <div class="user-section">
         <span class="user-name">{{ currentUser?.name || 'Usuário' }}</span>
@@ -23,67 +28,67 @@
   <!-- Main Content -->
   <div class="main-content">
     <!-- Sidebar -->
-    <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+    <aside class="sidebar" [class.collapsed]="sidebarCollapsed" [class.mobile-open]="mobileMenuOpen">
       <nav class="sidebar-nav">
         <ul class="nav-list">
           <li class="nav-item">
-            <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+            <a routerLink="/dashboard" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-tachometer-alt"></i>
               <span>Dashboard</span>
             </a>
           </li>
           
           <li class="nav-item">
-            <a routerLink="/customers" routerLinkActive="active" class="nav-link">
+            <a routerLink="/customers" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-users"></i>
               <span>Clientes</span>
             </a>
           </li>
           
           <li class="nav-item">
-            <a routerLink="/vehicles" routerLinkActive="active" class="nav-link">
+            <a routerLink="/vehicles" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-car"></i>
               <span>Veículos</span>
             </a>
           </li>
           
           <li class="nav-item">
-            <a routerLink="/employees" routerLinkActive="active" class="nav-link">
+            <a routerLink="/employees" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-user-tie"></i>
               <span>Funcionários</span>
             </a>
           </li>
           
           <li class="nav-item">
-            <a routerLink="/services" routerLinkActive="active" class="nav-link">
+            <a routerLink="/services" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-tools"></i>
               <span>Serviços</span>
             </a>
           </li>
           
           <li class="nav-item">
-            <a routerLink="/products" routerLinkActive="active" class="nav-link">
+            <a routerLink="/products" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-box"></i>
               <span>Produtos</span>
             </a>
           </li>
           
           <li class="nav-item">
-            <a routerLink="/sales" routerLinkActive="active" class="nav-link">
+            <a routerLink="/sales" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-shopping-cart"></i>
               <span>Vendas</span>
             </a>
           </li>
           
           <li class="nav-item">
-            <a routerLink="/financial" routerLinkActive="active" class="nav-link">
+            <a routerLink="/financial" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-chart-line"></i>
               <span>Financeiro</span>
             </a>
           </li>
           
           <li class="nav-item">
-            <a routerLink="/reports" routerLinkActive="active" class="nav-link">
+            <a routerLink="/reports" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
               <i class="fas fa-chart-bar"></i>
               <span>Relatórios</span>
             </a>
@@ -91,10 +96,13 @@
         </ul>
       </nav>
       
-      <button class="sidebar-toggle" (click)="toggleSidebar()">
+      <button class="sidebar-toggle" (click)="toggleSidebar()" *ngIf="!isMobile">
         <i class="fas fa-chevron-left" [class.rotated]="sidebarCollapsed"></i>
       </button>
     </aside>
+
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" [class.show]="mobileMenuOpen" (click)="closeMobileMenu()"></div>
 
     <!-- Content Area -->
     <main class="content-area">
