@@ -4,11 +4,12 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Service, ServiceCategory, AdditionalService, ServiceSearchParams } from '../../models';
 import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { CurrencyMaskDirective } from '../../directives';
 
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CurrencyMaskDirective],
   templateUrl: './services.component.html',
   styleUrl: './services.component.css'
 })
@@ -174,8 +175,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
       additionalServices: this.selectedAdditionalServices // IDs já extraídos
     });
 
-    console.log('Serviço selecionado para edição:', service);
-    console.log('Addons selecionados:', this.selectedAdditionalServices);
+
 
     this.showForm = true;
   }
@@ -193,7 +193,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
     const formValue = this.serviceForm.value;
 
     if (this.isCreating) {
-      console.log('Criando serviço:', formValue);
+
 
       this.api.create('services', { ...formValue, isActive: true }).subscribe((services: any[]) => {
         const service = services[0];
@@ -204,7 +204,6 @@ export class ServicesComponent implements OnInit, OnDestroy {
         }));
 
         this.api.create('services_with_addons', addons).subscribe((res: any) => {
-          console.log('Addons criados:', res);
 
           this.closeForm();
           this.loadServices();
@@ -223,7 +222,6 @@ export class ServicesComponent implements OnInit, OnDestroy {
 
 
           this.api.create('services_with_addons', addons).subscribe((res: any) => {
-            console.log('Addons criados:', res);
 
             this.closeForm();
             this.loadServices();

@@ -4,11 +4,12 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Employee } from '../../models';
 import { of, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { CpfCnpjMaskDirective, PhoneMaskDirective, CurrencyMaskDirective } from '../../directives';
 
 @Component({
   selector: 'app-employees',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CpfCnpjMaskDirective, PhoneMaskDirective, CurrencyMaskDirective],
   templateUrl: './employees.component.html',
   styleUrl: './employees.component.css'
 })
@@ -73,7 +74,6 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   loadStats() {
     const employees = this.employees;
 
-    console.log(employees);
     const total = employees.length;
     const activeEmployees = employees.filter(e => e.isActive);
     const inactiveEmployees = employees.filter(e => !e.isActive);
@@ -92,7 +92,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
       averageSalary
     };
 
-    console.log(this.stats);
+
 
     // Atualiza cargos disponíveis
     this.availablePositions = [...new Set(employees.map(e => e.position))].sort();
@@ -110,7 +110,6 @@ export class EmployeesComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(employees => {
         this.employees = employees;
-        console.log(employees);
         this.loadStats()
         this.applyFilters();
       });
@@ -127,7 +126,6 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   loadAvailablePositions() {
 
     const positions = [...new Set(this.employees.map(e => e.position))];
-    console.log(positions);
     positions.push('Novo Cargo');
     return of(positions.sort());
 
@@ -208,9 +206,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
 
       if (this.isCreating) {
 
-        console.log('Creating employee...');
 
-        console.log('formValue:', formValue);
 
         this.apiService.create('employees', {
           ...formValue,

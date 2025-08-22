@@ -197,7 +197,8 @@
               formControlName="cpf" 
               placeholder="000.000.000-00"
               class="form-input"
-              maxlength="14"
+              appCpfCnpjMask
+              documentType="CPF"
             >
             <div *ngIf="employeeForm.get('cpf')?.invalid && employeeForm.get('cpf')?.touched" class="error-message">
               CPF é obrigatório no formato 000.000.000-00
@@ -225,6 +226,7 @@
               formControlName="phone" 
               placeholder="(11) 99999-9999"
               class="form-input"
+              appPhoneMask
             >
             <div *ngIf="employeeForm.get('phone')?.invalid && employeeForm.get('phone')?.touched" class="error-message">
               Telefone é obrigatório no formato (11) 99999-9999
@@ -236,13 +238,12 @@
           <div class="form-group">
             <label for="salary">Salário *</label>
             <input 
-              type="number" 
+              type="text" 
               id="salary" 
               formControlName="salary" 
-              placeholder="0.00"
+              placeholder="R$ 0,00"
               class="form-input"
-              step="0.01"
-              min="0"
+              appCurrencyMask
             >
             <div *ngIf="employeeForm.get('salary')?.invalid && employeeForm.get('salary')?.touched" class="error-message">
               Salário é obrigatório e deve ser maior que zero

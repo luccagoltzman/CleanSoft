@@ -4,11 +4,12 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Customer, CustomerSearchParams } from '../../models';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { CpfCnpjMaskDirective, PhoneMaskDirective } from '../../directives';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CpfCnpjMaskDirective, PhoneMaskDirective],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css'
 })
@@ -81,7 +82,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
     let filtered = [...this.customers];
 
     if (this.searchTerm) {
-      console.log('term:', this.searchTerm);
+  
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(c =>
         (c.name?.toLowerCase() || '').includes(term) ||

@@ -301,13 +301,12 @@
           <div class="form-group">
             <label for="costPrice">Preço de Custo *</label>
             <input 
-              type="number" 
+              type="text" 
               id="costPrice" 
               formControlName="costPrice" 
-              placeholder="0.00"
+              placeholder="R$ 0,00"
               class="form-input"
-              step="0.01"
-              min="0"
+              appCurrencyMask
             >
             <div *ngIf="productForm.get('costPrice')?.invalid && productForm.get('costPrice')?.touched" class="error-message">
               Preço de custo é obrigatório e deve ser maior que zero
@@ -317,13 +316,12 @@
           <div class="form-group">
             <label for="salePrice">Preço de Venda *</label>
             <input 
-              type="number" 
+              type="text" 
               id="salePrice" 
               formControlName="salePrice" 
-              placeholder="0.00"
+              placeholder="R$ 0,00"
               class="form-input"
-              step="0.01"
-              min="0"
+              appCurrencyMask
             >
             <div *ngIf="productForm.get('salePrice')?.invalid && productForm.get('salePrice')?.touched" class="error-message">
               Preço de venda é obrigatório e deve ser maior que zero
@@ -422,6 +420,7 @@
               formControlName="document" 
               placeholder="000.000.000-00 ou 00.000.000/0000-00"
               class="form-input"
+              appCpfCnpjMask
             >
             <div *ngIf="supplierForm.get('document')?.invalid && supplierForm.get('document')?.touched" class="error-message">
               Documento é obrigatório e deve ter pelo menos 11 caracteres
@@ -452,10 +451,11 @@
               formControlName="phone" 
               placeholder="(11) 99999-9999"
               class="form-input"
+              appPhoneMask
             >
             <div *ngIf="supplierForm.get('phone')?.invalid && supplierForm.get('phone')?.touched" class="error-message">
               Telefone é obrigatório no formato (11) 99999-9999
-            </div>
+              </div>
           </div>
         </div>
         
@@ -556,13 +556,12 @@
           <div class="form-group">
             <label for="unitPrice">Preço Unitário *</label>
             <input 
-              type="number" 
+              type="text" 
               id="unitPrice" 
               formControlName="unitPrice" 
-              placeholder="0.00"
+              placeholder="R$ 0,00"
               class="form-input"
-              step="0.01"
-              min="0"
+              appCurrencyMask
             >
             <div *ngIf="stockMovementForm.get('unitPrice')?.invalid && stockMovementForm.get('unitPrice')?.touched" class="error-message">
               Preço unitário é obrigatório e deve ser maior ou igual a zero

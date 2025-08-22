@@ -5,11 +5,12 @@ import { SaleService } from '../../services/sale.service';
 import { Sale, SaleItem, PaymentMethod, PaymentStatus, Customer, Vehicle, Product, Service } from '../../models';
 import { Subject, takeUntil, combineLatest, forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { CurrencyMaskDirective } from '../../directives';
 
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CurrencyMaskDirective],
   templateUrl: './sales.component.html',
   styleUrl: './sales.component.css'
 })
@@ -94,7 +95,7 @@ export class SalesComponent implements OnInit, OnDestroy {
         return sale;
       });
       this.sales = formattedSales;
-      console.log('Vendas com items renomeados:', formattedSales);
+
       this.applyFilters();
     });
 
@@ -242,7 +243,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   saveSale() {
-    console.log(this.saleForm.valid && this.items.length > 0);
+
 
     if (this.saleForm.valid && this.items.length > 0) {
       const formValue = this.saleForm.value;
@@ -274,7 +275,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       if (this.isCreating) {
         this.api.create('sales', saleData).subscribe((sale: any) => {
           saveItems(sale[0].id).subscribe(() => {
-            console.log('Venda e itens criados:', sale);
+
             this.closeForm();
             this.loadSales();
             this.loadStats();
@@ -284,7 +285,7 @@ export class SalesComponent implements OnInit, OnDestroy {
         this.api.update('sales', this.selectedSale.id, saleData).subscribe(() => {
           this.api.deleteByColumn('sale_items', 'saleId', this.selectedSale!.id).subscribe(() => {
             saveItems(this.selectedSale!.id).subscribe(() => {
-              console.log('Venda atualizada e itens substituídos');
+
               this.closeForm();
               this.loadSales();
               this.loadStats();

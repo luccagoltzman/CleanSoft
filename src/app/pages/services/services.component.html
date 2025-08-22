@@ -231,13 +231,12 @@
           <div class="form-group">
             <label for="basePrice">Preço Base *</label>
             <input 
-              type="number" 
+              type="text" 
               id="basePrice" 
               formControlName="basePrice" 
-              placeholder="0.00"
+              placeholder="R$ 0,00"
               class="form-input"
-              step="0.01"
-              min="0"
+              appCurrencyMask
             >
             <div *ngIf="serviceForm.get('basePrice')?.invalid && serviceForm.get('basePrice')?.touched" class="error-message">
               Preço base é obrigatório e deve ser maior que zero
@@ -323,13 +322,12 @@
         <div class="form-group">
           <label for="additionalPrice">Preço Adicional *</label>
           <input 
-            type="number" 
+            type="text" 
             id="additionalPrice" 
             formControlName="additionalPrice" 
-            placeholder="0.00"
+            placeholder="R$ 0,00"
             class="form-input"
-            step="0.01"
-            min="0"
+            appCurrencyMask
           >
           <div *ngIf="additionalServiceForm.get('additionalPrice')?.invalid && additionalServiceForm.get('additionalPrice')?.touched" class="error-message">
             Preço adicional é obrigatório e deve ser maior que zero

@@ -292,12 +292,12 @@
 
                 <div class="form-group">
                   <label>Preço Unitário *</label>
-                  <input type="number" formControlName="unitPrice" class="form-input" step="0.01" min="0">
+                  <input type="text" formControlName="unitPrice" class="form-input" placeholder="R$ 0,00" appCurrencyMask>
                 </div>
 
                 <div class="form-group">
                   <label>Desconto</label>
-                  <input type="number" formControlName="discount" class="form-input" step="0.01" min="0">
+                  <input type="text" formControlName="discount" class="form-input" placeholder="R$ 0,00" appCurrencyMask>
                 </div>
               </div>
 
@@ -321,7 +321,7 @@
           </div>
           <div class="total-row">
             <label>Desconto Geral:</label>
-            <input type="number" formControlName="discount" class="form-input discount-input" step="0.01" min="0">
+            <input type="text" formControlName="discount" class="form-input discount-input" placeholder="R$ 0,00" appCurrencyMask>
           </div>
           <div class="total-row total">
             <label>Total:</label>
