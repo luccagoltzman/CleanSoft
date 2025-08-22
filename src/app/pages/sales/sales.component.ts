@@ -74,8 +74,8 @@ export class SalesComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadCustomers();
     this.loadProducts();
+    this.loadServices();
     this.loadSales();
-    // this.loadStats();
   }
 
   ngOnDestroy() {
@@ -84,55 +84,143 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   loadSales() {
-
     this.api.getAll('sales', undefined, ['sale_items(*)']).subscribe((sales: any[]) => {
       const formattedSales = sales.map(sale => ({
-        ...sale,
-        items: sale.sale_items,
-      })).map(sale => {
-        delete sale.sale_items;
-        return sale;
-      });
+        id: sale.id,
+        customerId: sale.customerId,
+        vehicleId: sale.vehicleId,
+        subtotal: sale.subtotal || 0,
+        discount: sale.discount || 0,
+        total: sale.total || 0,
+        paymentMethod: sale.paymentMethod,
+        paymentStatus: sale.paymentStatus,
+        notes: sale.notes,
+        date: sale.date ? new Date(sale.date) : new Date(),
+        createdAt: sale.createdAt ? new Date(sale.createdAt) : new Date(),
+        updatedAt: sale.updatedAt ? new Date(sale.updatedAt) : new Date(),
+        createdBy: sale.createdBy || 1, // Valor padrão se não existir
+        items: sale.sale_items ? sale.sale_items.map((item: any) => ({
+          id: item.id,
+          saleId: item.saleId,
+          type: item.type,
+          productId: item.productId,
+          serviceId: item.serviceId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          discount: item.discount || 0,
+          notes: item.notes
+        })) : []
+      }));
+      
       this.sales = formattedSales;
-      console.log('Vendas com items renomeados:', formattedSales);
+      console.log('Vendas formatadas:', formattedSales);
       this.applyFilters();
+      this.loadStats(); // Carrega as estatísticas após carregar as vendas
     });
-
-
   }
 
   loadCustomers() {
     this.api.getAll('clients')
       .pipe(takeUntil(this.destroy$))
-      .subscribe(customers => {
-        this.customers = customers;
+      .subscribe((customers: any[]) => {
+        this.customers = customers.map(customer => ({
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          document: customer.document,
+          documentType: customer.documentType,
+          observations: customer.observations,
+          isActive: customer.isActive,
+          createdAt: customer.createdAt ? new Date(customer.createdAt) : new Date(),
+          updatedAt: customer.updatedAt ? new Date(customer.updatedAt) : new Date(),
+          vehicles: []
+        }));
       });
   }
 
   loadVehicles() {
     this.api.getByColumn('vehicles', 'customerId', this.saleForm.get('customerId')?.value)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(vehicles => {
-        this.vehicles = vehicles;
+      .subscribe((vehicles: any[]) => {
+        this.vehicles = vehicles.map(vehicle => ({
+          id: vehicle.id,
+          customerId: vehicle.customerId,
+          licensePlate: vehicle.licensePlate,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          color: vehicle.color,
+          observations: vehicle.observations,
+          isActive: vehicle.isActive,
+          createdAt: vehicle.createdAt ? new Date(vehicle.createdAt) : new Date(),
+          updatedAt: vehicle.updatedAt ? new Date(vehicle.updatedAt) : new Date()
+        }));
       });
   }
 
   loadProducts() {
     this.api.getAll('products')
       .pipe(takeUntil(this.destroy$))
-      .subscribe(products => {
-        this.products = products;
+      .subscribe((products: any[]) => {
+        this.products = products.map(product => ({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          sku: product.sku || '',
+          unit: product.unit || 'un',
+          costPrice: product.costPrice || 0,
+          salePrice: product.salePrice || 0,
+          currentStock: product.currentStock || product.stock || 0,
+          minStock: product.minStock || 0,
+          category: product.category || '',
+          brand: product.brand || '',
+          isActive: product.isActive !== undefined ? product.isActive : true,
+          supplierId: product.supplierId || 1,
+          createdAt: product.createdAt ? new Date(product.createdAt) : new Date(),
+          updatedAt: product.updatedAt ? new Date(product.updatedAt) : new Date()
+        }));
+      });
+  }
+
+  loadServices() {
+    this.api.getAll('services')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((services: any[]) => {
+        this.services = services.map(service => ({
+          id: service.id,
+          name: service.name,
+          description: service.description,
+          category: service.category,
+          basePrice: service.basePrice || 0,
+          isActive: service.isActive !== undefined ? service.isActive : true,
+          createdAt: service.createdAt ? new Date(service.createdAt) : new Date(),
+          updatedAt: service.updatedAt ? new Date(service.updatedAt) : new Date()
+        }));
       });
   }
 
 
 
   loadStats() {
-    this.saleService.getSalesReport()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(stats => {
-        this.stats = stats;
-      });
+    // Calcula estatísticas baseadas nos dados carregados
+    const totalSales = this.sales.length;
+    const totalRevenue = this.sales.reduce((sum, s) => sum + (s.total || 0), 0);
+    const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
+    
+    const paidSales = this.sales.filter(s => s.paymentStatus === 'paid').length;
+    const pendingSales = this.sales.filter(s => s.paymentStatus === 'pending').length;
+    const cancelledSales = this.sales.filter(s => s.paymentStatus === 'cancelled').length;
+
+    this.stats = {
+      totalSales,
+      totalRevenue,
+      averageTicket,
+      paidSales,
+      pendingSales,
+      cancelledSales
+    };
   }
 
   applyFilters() {
@@ -249,21 +337,29 @@ export class SalesComponent implements OnInit, OnDestroy {
 
       const saleData = {
         customerId: formValue.customerId,
-        vehicleId: formValue.vehicleId,
-        total: this.calculateSaleTotal(),
+        vehicleId: formValue.vehicleId || null,
+        subtotal: this.calculateSaleSubtotal(),
         discount: formValue.discount || 0,
+        total: this.calculateSaleTotal(),
         paymentMethod: formValue.paymentMethod,
-        created_at: new Date()
+        paymentStatus: formValue.paymentStatus || 'pending',
+        notes: formValue.notes || '',
+        date: formValue.date,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
       const saveItems = (saleId: number) => {
         const saleItemsData = this.items.value.map((item: any) => ({
           saleId: saleId,
           productId: item.type === 'product' ? item.productId : null,
+          serviceId: item.type === 'service' ? item.serviceId : null,
+          type: item.type,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          totalPrice: this.calculateItemTotal(item),
           discount: item.discount || 0,
-          notes: item.notes
+          notes: item.notes || ''
         }));
 
         return forkJoin(
@@ -305,7 +401,12 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   cancelSale(sale: Sale) {
-    this.saleService.cancelSale(sale.id).subscribe(() => {
+    const updateData = {
+      paymentStatus: 'cancelled',
+      updatedAt: new Date().toISOString()
+    };
+    
+    this.api.update('sales', sale.id, updateData).subscribe(() => {
       this.loadSales();
       this.loadStats();
     });
@@ -426,29 +527,47 @@ export class SalesComponent implements OnInit, OnDestroy {
     const type = item.get('type')?.value;
 
     if (type === 'product') {
-      item.patchValue({ serviceId: '' });
+      item.patchValue({ 
+        serviceId: '', 
+        unitPrice: 0
+      });
     } else {
-      item.patchValue({ productId: '' });
+      item.patchValue({ 
+        productId: '', 
+        unitPrice: 0
+      });
     }
   }
 
   onProductChange(index: number) {
     const item = this.items.at(index);
     const productId = item.get('productId')?.value;
-    const product = this.products.find(p => p.id === productId);
-
-    if (product) {
-      item.patchValue({ unitPrice: product.salePrice });
+    
+    if (productId) {
+      const product = this.products.find(p => p.id === productId);
+      if (product) {
+        item.patchValue({ unitPrice: product.salePrice });
+      } else {
+        item.patchValue({ unitPrice: 0 });
+      }
+    } else {
+      item.patchValue({ unitPrice: 0 });
     }
   }
 
   onServiceChange(index: number) {
     const item = this.items.at(index);
     const serviceId = item.get('serviceId')?.value;
-    const service = this.services.find(s => s.id === serviceId);
-
-    if (service) {
-      item.patchValue({ unitPrice: service.basePrice });
+    
+    if (serviceId) {
+      const service = this.services.find(s => s.id === serviceId);
+      if (service) {
+        item.patchValue({ unitPrice: service.basePrice });
+      } else {
+        item.patchValue({ unitPrice: 0 });
+      }
+    } else {
+      item.patchValue({ unitPrice: 0 });
     }
   }
 
@@ -459,8 +578,6 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   onCustomerChange() {
     this.saleForm.patchValue({ vehicleId: '' });
-
     this.loadVehicles();
-
   }
 }
