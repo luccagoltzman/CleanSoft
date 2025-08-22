@@ -26,7 +26,7 @@ export class AppComponent {
 
   logout() {
     // Implementar lógica de logout
-
+    console.log('Logout realizado');
     this.showUserMenu = false;
   }
 }

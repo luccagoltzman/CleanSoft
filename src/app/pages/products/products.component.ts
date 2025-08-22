@@ -5,12 +5,11 @@ import { ProductService } from '../../services/product.service';
 import { Product, Supplier, StockMovementReason } from '../../models';
 import { of, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
-import { CpfCnpjMaskDirective, PhoneMaskDirective, CurrencyMaskDirective } from '../../directives';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, CpfCnpjMaskDirective, PhoneMaskDirective, CurrencyMaskDirective],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './products.component.html',
   styleUrl: './products.component.css'
 })
@@ -157,7 +156,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
     const categories = [...new Set(this.products.map(p => p.category))];
     this.availableCategories = categories;
-    
+    console.log(categories);
 
   }
 

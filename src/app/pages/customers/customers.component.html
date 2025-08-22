@@ -98,7 +98,7 @@
           <td>{{ customer.phone }}</td>
           <td>{{ customer.email }}</td>
           <td>
-            <span class="document-badge" [class]="customer.documentType.toLowerCase()">
+            <span class="document-badge" [class]="customer.documentType?.toLowerCase() || ''">
               {{ formatDocument(customer.document, customer.documentType) }}
             </span>
 
@@ -160,7 +160,7 @@
 
           <div class="form-group">
             <label for="phone">Telefone *</label>
-            <input type="text" id="phone" formControlName="phone" placeholder="(11) 99999-9999" class="form-input" appPhoneMask>
+            <input type="text" id="phone" formControlName="phone" placeholder="(11) 99999-9999" class="form-input">
             <div *ngIf="customerForm.get('phone')?.invalid && customerForm.get('phone')?.touched" class="error-message">
               Telefone é obrigatório no formato (11) 99999-9999
             </div>
@@ -189,9 +189,7 @@
           <div class="form-group">
             <label for="document">Documento *</label>
             <input type="text" id="document" formControlName="document" [placeholder]="getDocumentMask()"
-              class="form-input"
-              appCpfCnpjMask
-              [documentType]="customerForm.get('documentType')?.value">
+              class="form-input">
             <div *ngIf="customerForm.get('document')?.invalid && customerForm.get('document')?.touched"
               class="error-message">
               Documento é obrigatório
@@ -242,7 +240,7 @@
         </div>
         <div class="detail-row">
           <label>Documento:</label>
-          <span class="document-badge" [class]="selectedCustomer.documentType.toLowerCase()">
+          <span class="document-badge" [class]="selectedCustomer.documentType?.toLowerCase() ">
             {{ formatDocument(selectedCustomer.document, selectedCustomer.documentType) }}
           </span>
         </div>
