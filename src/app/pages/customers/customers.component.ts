@@ -4,11 +4,13 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Customer, CustomerSearchParams } from '../../models';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { ModalComponent } from '../../shared/components';
+import { ModalConfig } from '../../shared/components/modal/modal.types';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ModalComponent],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css'
 })

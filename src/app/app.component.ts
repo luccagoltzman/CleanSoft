@@ -1,5 +1,5 @@
-import { Component, OnInit, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, HostListener, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { User } from './models';
 
@@ -10,7 +10,7 @@ import { User } from './models';
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   title = 'CleanSoft Estética';
   sidebarCollapsed = false;
   showUserMenu = false;
@@ -18,19 +18,36 @@ export class AppComponent implements OnInit {
   isMobile = false;
   mobileMenuOpen = false;
 
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+
   ngOnInit() {
-    this.checkScreenSize();
+    // Só verificar tamanho da tela se estiver no browser
+    if (isPlatformBrowser(this.platformId)) {
+      this.checkScreenSize();
+    }
   }
 
-  @HostListener('window:resize', ['$event'])
+  ngOnDestroy() {
+    // Cleanup se necessário
+  }
+
+  @HostListener('window:resize')
   onResize() {
-    this.checkScreenSize();
+    // Só executar se estiver no browser
+    if (isPlatformBrowser(this.platformId)) {
+      this.checkScreenSize();
+    }
   }
 
   checkScreenSize() {
-    this.isMobile = window.innerWidth <= 768;
-    if (!this.isMobile) {
-      this.mobileMenuOpen = false;
+    // Verificar se está no browser antes de acessar window
+    if (isPlatformBrowser(this.platformId)) {
+      this.isMobile = window.innerWidth <= 768;
+      
+      // Fechar menu mobile se mudar para desktop
+      if (!this.isMobile && this.mobileMenuOpen) {
+        this.mobileMenuOpen = false;
+      }
     }
   }
 
@@ -43,9 +60,7 @@ export class AppComponent implements OnInit {
   }
 
   closeMobileMenu() {
-    if (this.isMobile) {
-      this.mobileMenuOpen = false;
-    }
+    this.mobileMenuOpen = false;
   }
 
   toggleUserMenu() {
