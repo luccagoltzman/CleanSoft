@@ -241,6 +241,21 @@
           </div>
         </div>
 
+        <div class="form-row">
+          <div class="form-group">
+            <label for="paymentStatus">Status do Pagamento *</label>
+            <select id="paymentStatus" formControlName="paymentStatus" class="form-select">
+              <option *ngFor="let status of paymentStatuses" [value]="status">
+                {{ getPaymentStatusText(status) }}
+              </option>
+            </select>
+            <div *ngIf="saleForm.get('paymentStatus')?.invalid && saleForm.get('paymentStatus')?.touched"
+              class="error-message">
+              Status do pagamento é obrigatório
+            </div>
+          </div>
+        </div>
+
         <!-- Itens da Venda -->
         <div class="items-section">
           <div class="section-header">
