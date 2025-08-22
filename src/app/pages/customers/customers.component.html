@@ -98,7 +98,7 @@
           <td>{{ customer.phone }}</td>
           <td>{{ customer.email }}</td>
           <td>
-            <span class="document-badge" [class]="customer.documentType?.toLowerCase() || ''">
+            <span class="document-badge" [class]="customer.documentType.toLowerCase()">
               {{ formatDocument(customer.document, customer.documentType) }}
             </span>
 
@@ -240,7 +240,7 @@
         </div>
         <div class="detail-row">
           <label>Documento:</label>
-          <span class="document-badge" [class]="selectedCustomer.documentType?.toLowerCase() ">
+          <span class="document-badge" [class]="selectedCustomer.documentType.toLowerCase()">
             {{ formatDocument(selectedCustomer.document, selectedCustomer.documentType) }}
           </span>
         </div>
