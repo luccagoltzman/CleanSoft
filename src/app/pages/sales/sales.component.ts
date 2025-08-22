@@ -113,7 +113,7 @@ export class SalesComponent implements OnInit, OnDestroy {
         })) : []
       }));
       
-      this.sales = formattedSales;
+      this.sales = formattedSales;''
       console.log('Vendas formatadas:', formattedSales);
       this.applyFilters();
       this.loadStats(); // Carrega as estatísticas após carregar as vendas
@@ -337,27 +337,21 @@ export class SalesComponent implements OnInit, OnDestroy {
 
       const saleData = {
         customerId: formValue.customerId,
-        vehicleId: formValue.vehicleId || null,
-        subtotal: this.calculateSaleSubtotal(),
-        discount: formValue.discount || 0,
+        vehicleId: formValue.vehicleId,
         total: this.calculateSaleTotal(),
+        discount: formValue.discount || 0,
         paymentMethod: formValue.paymentMethod,
         paymentStatus: formValue.paymentStatus || 'pending',
-        notes: formValue.notes || '',
-        date: formValue.date,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        notes: formValue.notes || ''
       };
 
       const saveItems = (saleId: number) => {
         const saleItemsData = this.items.value.map((item: any) => ({
           saleId: saleId,
-          productId: item.type === 'product' ? item.productId : null,
-          serviceId: item.type === 'service' ? item.serviceId : null,
-          type: item.type,
+          productId: item.type === 'product' ? item.productId : undefined,
+          serviceId: item.type === 'service' ? item.serviceId : undefined,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          totalPrice: this.calculateItemTotal(item),
           discount: item.discount || 0,
           notes: item.notes || ''
         }));
@@ -402,8 +396,7 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   cancelSale(sale: Sale) {
     const updateData = {
-      paymentStatus: 'cancelled',
-      updatedAt: new Date().toISOString()
+      paymentStatus: 'cancelled'
     };
     
     this.api.update('sales', sale.id, updateData).subscribe(() => {
