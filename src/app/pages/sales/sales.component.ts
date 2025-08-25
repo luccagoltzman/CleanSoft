@@ -74,7 +74,6 @@ export class SalesComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadCustomers();
     this.loadProducts();
-    this.loadServices();
     this.loadSales();
   }
 
@@ -96,9 +95,9 @@ export class SalesComponent implements OnInit, OnDestroy {
         paymentStatus: sale.paymentStatus,
         notes: sale.notes,
         date: sale.date ? new Date(sale.date) : new Date(),
-        createdAt: sale.createdAt ? new Date(sale.createdAt) : new Date(),
-        updatedAt: sale.updatedAt ? new Date(sale.updatedAt) : new Date(),
-        createdBy: sale.createdBy || 1, // Valor padrão se não existir
+        createdAt: sale.createdAt,
+        updatedAt: sale.updatedAt,
+        createdBy: sale.createdBy || 1,
         items: sale.sale_items ? sale.sale_items.map((item: any) => ({
           id: item.id,
           saleId: item.saleId,
@@ -112,9 +111,8 @@ export class SalesComponent implements OnInit, OnDestroy {
           notes: item.notes
         })) : []
       }));
-      
-      this.sales = formattedSales;''
-      console.log('Vendas formatadas:', formattedSales);
+
+      this.sales = formattedSales; ''
       this.applyFilters();
       this.loadStats(); // Carrega as estatísticas após carregar as vendas
     });
@@ -133,14 +131,14 @@ export class SalesComponent implements OnInit, OnDestroy {
           documentType: customer.documentType,
           observations: customer.observations,
           isActive: customer.isActive,
-          createdAt: customer.createdAt ? new Date(customer.createdAt) : new Date(),
-          updatedAt: customer.updatedAt ? new Date(customer.updatedAt) : new Date(),
+          createdAt: customer.createdAt,
+          updatedAt: customer.updatedAt,
           vehicles: []
         }));
       });
   }
 
-  loadVehicles() {
+  loadVehiclesByCustomerId() {
     this.api.getByColumn('vehicles', 'customerId', this.saleForm.get('customerId')?.value)
       .pipe(takeUntil(this.destroy$))
       .subscribe((vehicles: any[]) => {
@@ -178,37 +176,25 @@ export class SalesComponent implements OnInit, OnDestroy {
           brand: product.brand || '',
           isActive: product.isActive !== undefined ? product.isActive : true,
           supplierId: product.supplierId || 1,
-          createdAt: product.createdAt ? new Date(product.createdAt) : new Date(),
-          updatedAt: product.updatedAt ? new Date(product.updatedAt) : new Date()
+          createdAt: product.createdAt,
+          updatedAt: product.updatedAt
         }));
       });
   }
 
-  loadServices() {
-    this.api.getAll('services')
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((services: any[]) => {
-        this.services = services.map(service => ({
-          id: service.id,
-          name: service.name,
-          description: service.description,
-          category: service.category,
-          basePrice: service.basePrice || 0,
-          isActive: service.isActive !== undefined ? service.isActive : true,
-          createdAt: service.createdAt ? new Date(service.createdAt) : new Date(),
-          updatedAt: service.updatedAt ? new Date(service.updatedAt) : new Date()
-        }));
-      });
+  formatDate(date: Date): string {
+    if (!date) return '';
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) return '';
+    return parsedDate.toLocaleDateString('pt-BR');
   }
-
-
 
   loadStats() {
     // Calcula estatísticas baseadas nos dados carregados
     const totalSales = this.sales.length;
     const totalRevenue = this.sales.reduce((sum, s) => sum + (s.total || 0), 0);
     const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
-    
+
     const paidSales = this.sales.filter(s => s.paymentStatus === 'paid').length;
     const pendingSales = this.sales.filter(s => s.paymentStatus === 'pending').length;
     const cancelledSales = this.sales.filter(s => s.paymentStatus === 'cancelled').length;
@@ -313,14 +299,15 @@ export class SalesComponent implements OnInit, OnDestroy {
 
     this.saleForm.patchValue({
       customerId: sale.customerId,
-      vehicleId: sale.vehicleId,
       discount: sale.discount,
       paymentMethod: sale.paymentMethod,
       paymentStatus: sale.paymentStatus,
       notes: sale.notes,
       date: sale.date
     });
+    this.loadVehiclesByCustomerId();
 
+    this.saleForm.patchValue({ vehicleId: sale.vehicleId });
     this.showForm = true;
   }
 
@@ -329,8 +316,17 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.showForm = false;
   }
 
+  public totalDiscount(sale: Sale): number {
+    const itemDiscounts =
+      sale?.items?.reduce(
+        (total, currentItem) => total + (currentItem.discount || 0),
+        0
+      ) ?? 0;
+
+    return itemDiscounts + (sale?.discount ?? 0);
+  }
+
   saveSale() {
-    console.log(this.saleForm.valid && this.items.length > 0);
 
     if (this.saleForm.valid && this.items.length > 0) {
       const formValue = this.saleForm.value;
@@ -342,7 +338,8 @@ export class SalesComponent implements OnInit, OnDestroy {
         discount: formValue.discount || 0,
         paymentMethod: formValue.paymentMethod,
         paymentStatus: formValue.paymentStatus || 'pending',
-        notes: formValue.notes || ''
+        notes: formValue.notes || '',
+        createdAt: new Date(),
       };
 
       const saveItems = (saleId: number) => {
@@ -364,7 +361,6 @@ export class SalesComponent implements OnInit, OnDestroy {
       if (this.isCreating) {
         this.api.create('sales', saleData).subscribe((sale: any) => {
           saveItems(sale[0].id).subscribe(() => {
-            console.log('Venda e itens criados:', sale);
             this.closeForm();
             this.loadSales();
             this.loadStats();
@@ -374,7 +370,6 @@ export class SalesComponent implements OnInit, OnDestroy {
         this.api.update('sales', this.selectedSale.id, saleData).subscribe(() => {
           this.api.deleteByColumn('sale_items', 'saleId', this.selectedSale!.id).subscribe(() => {
             saveItems(this.selectedSale!.id).subscribe(() => {
-              console.log('Venda atualizada e itens substituídos');
               this.closeForm();
               this.loadSales();
               this.loadStats();
@@ -398,7 +393,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     const updateData = {
       paymentStatus: 'cancelled'
     };
-    
+
     this.api.update('sales', sale.id, updateData).subscribe(() => {
       this.loadSales();
       this.loadStats();
@@ -446,7 +441,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   getProductName(productId: number): string {
-    const product = this.products.find(p => p.id === productId);
+    const product = this.products.find(p => p.id == productId);
     return product ? product.name : 'N/A';
   }
 
@@ -520,24 +515,24 @@ export class SalesComponent implements OnInit, OnDestroy {
     const type = item.get('type')?.value;
 
     if (type === 'product') {
-      item.patchValue({ 
-        serviceId: '', 
+      item.patchValue({
+        serviceId: '',
         unitPrice: 0
       });
     } else {
-      item.patchValue({ 
-        productId: '', 
+      item.patchValue({
+        productId: '',
         unitPrice: 0
       });
     }
   }
 
   onProductChange(index: number) {
+
     const item = this.items.at(index);
     const productId = item.get('productId')?.value;
-    
     if (productId) {
-      const product = this.products.find(p => p.id === productId);
+      const product = this.products.find(p => p.id == productId);
       if (product) {
         item.patchValue({ unitPrice: product.salePrice });
       } else {
@@ -551,7 +546,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   onServiceChange(index: number) {
     const item = this.items.at(index);
     const serviceId = item.get('serviceId')?.value;
-    
+
     if (serviceId) {
       const service = this.services.find(s => s.id === serviceId);
       if (service) {
@@ -571,6 +566,6 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   onCustomerChange() {
     this.saleForm.patchValue({ vehicleId: '' });
-    this.loadVehicles();
+    this.loadVehiclesByCustomerId();
   }
 }

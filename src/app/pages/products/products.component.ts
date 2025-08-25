@@ -1,9 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ProductService } from '../../services/product.service';
 import { Product, Supplier, StockMovementReason } from '../../models';
-import { of, Subject, takeUntil } from 'rxjs';
+import {  Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 
 @Component({
