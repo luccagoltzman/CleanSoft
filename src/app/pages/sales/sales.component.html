@@ -106,7 +106,6 @@
       <thead>
         <tr>
           <th>Cliente</th>
-          <th>Veículo</th>
           <th>Itens</th>
           <th>Total</th>
           <th>Pagamento</th>
@@ -123,25 +122,18 @@
             </div>
           </td>
           <td>
-            <span class="vehicle-info">{{ getVehicleInfo(sale.vehicleId || 0) }}</span>
-          </td>
-          <td>
             <div class="items-info">
               <div *ngFor="let item of sale.items" class="item">
-                <span *ngIf="item.type === 'product'">
-                  {{ getProductName(item.productId!) }} ({{ item.quantity }}x)
-                </span>
-                <span *ngIf="item.type === 'service'">
-                  {{ getServiceName(item.serviceId!) }} ({{ item.quantity }}x)
-                </span>
+                {{ getProductName(item.productId!) }} ({{ item.quantity }}x)
+
               </div>
             </div>
           </td>
           <td>
             <div class="total-info">
               <span class="total">{{ formatCurrency(sale.total) }}</span>
-              <span *ngIf="sale.discount > 0" class="discount">
-                -{{ formatCurrency(sale.discount) }}
+              <span *ngIf="sale.discount > 0" class="discount" title="Desconto" > 
+                -{{ formatCurrency(totalDiscount(sale)) }}
               </span>
             </div>
           </td>
@@ -154,7 +146,7 @@
             </span>
           </td>
           <td>
-            <span class="sale-date">{{ (sale.createdAt) }}</span>
+            <span class="sale-date">{{ formatDate(sale.createdAt) }}</span>
           </td>
           <td>
             <div class="action-buttons">
@@ -245,6 +237,21 @@
             <div *ngIf="saleForm.get('paymentMethod')?.invalid && saleForm.get('paymentMethod')?.touched"
               class="error-message">
               Método de pagamento é obrigatório
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="paymentStatus">Status do Pagamento *</label>
+            <select id="paymentStatus" formControlName="paymentStatus" class="form-select">
+              <option *ngFor="let status of paymentStatuses" [value]="status">
+                {{ getPaymentStatusText(status) }}
+              </option>
+            </select>
+            <div *ngIf="saleForm.get('paymentStatus')?.invalid && saleForm.get('paymentStatus')?.touched"
+              class="error-message">
+              Status do pagamento é obrigatório
             </div>
           </div>
         </div>
@@ -373,12 +380,8 @@
           <span>{{ getCustomerName(selectedSale.customerId) }}</span>
         </div>
         <div class="detail-row">
-          <label>Veículo:</label>
-          <span>{{ getVehicleInfo(selectedSale.vehicleId || 0) }}</span>
-        </div>
-        <div class="detail-row">
           <label>Data da Venda:</label>
-          <span>{{ (selectedSale.date) }}</span>
+          <span>{{ formatDate(selectedSale.date) }}</span>
         </div>
         <div class="detail-row">
           <label>Método de Pagamento:</label>
@@ -395,32 +398,29 @@
           <h4>Itens da Venda</h4>
           <div *ngFor="let item of selectedSale.items" class="item-detail">
             <div class="item-info">
-              <span *ngIf="item.type === 'product'">
-                {{ getProductName(item.productId!) }}
-              </span>
-              <span *ngIf="item.type === 'service'">
-                {{ getServiceName(item.serviceId!) }}
-              </span>
+              {{ getProductName(item.productId!) }}
               <span class="item-quantity">({{ item.quantity }}x)</span>
             </div>
             <div class="item-price">
-              <span class="unit-price">{{ formatCurrency(item.unitPrice) }} cada</span>
-              <span class="total-price">{{ formatCurrency(item.totalPrice) }}</span>
+              <span class="total-price">{{ formatCurrency( item.quantity*item.unitPrice) }}</span>
               <span *ngIf="item.discount > 0" class="item-discount">
-                -{{ formatCurrency(item.discount) }}
+                Desconto;
+                {{ formatCurrency(item.discount) }}
               </span>
             </div>
           </div>
         </div>
 
-        <div class="detail-row">
-          <label>Subtotal:</label>
-          <span>{{ formatCurrency(selectedSale.subtotal) }}</span>
-        </div>
-        <div class="detail-row">
-          <label>Desconto Geral:</label>
+        <div class="detail-row total">
+          <label>Desconto geral:</label>
           <span>{{ formatCurrency(selectedSale.discount) }}</span>
         </div>
+
+        <div class="detail-row">
+          <label>Desconto Total:</label>
+          <span>{{ formatCurrency(totalDiscount(selectedSale)) }}</span>
+        </div>
+
         <div class="detail-row total">
           <label>Total:</label>
           <span>{{ formatCurrency(selectedSale.total) }}</span>
@@ -439,9 +439,9 @@
         <button class="btn-primary" (click)="editSale(selectedSale)">
           Editar
         </button>
-        <button *ngIf="selectedSale.paymentStatus === 'pending'" class="btn-warning" (click)="cancelSale(selectedSale)">
+        <!-- <button *ngIf="selectedSale.paymentStatus === 'pending'" class="btn-warning" (click)="cancelSale(selectedSale)">
           Cancelar
-        </button>
+        </button> -->
       </div>
     </div>
   </div>
