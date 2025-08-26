@@ -1,4 +1,7 @@
 export interface Service {
+  paymentMethod: any;
+  paymentStatus: any;
+  dueDate: any;
   id: number;
   name: string;
   description: string;
@@ -8,6 +11,7 @@ export interface Service {
   createdAt: Date;
   updatedAt: Date;
   customerId: number;
+  vehicleId: number;
   services_with_addons?: any[];
 }
 

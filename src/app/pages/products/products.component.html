@@ -698,20 +698,7 @@
         <button class="btn-primary" (click)="editProduct(selectedProduct)">
           Editar
         </button>
-        <button 
-          *ngIf="selectedProduct.isActive"
-          class="btn-warning" 
-          (click)="deactivateProduct(selectedProduct)"
-        >
-          Desativar
-        </button>
-        <button 
-          *ngIf="!selectedProduct.isActive"
-          class="btn-success" 
-          (click)="activateProduct(selectedProduct)"
-        >
-          Ativar
-        </button>
+       
       </div>
     </div>
   </div>

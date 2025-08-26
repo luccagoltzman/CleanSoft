@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Service, ServiceCategory, AdditionalService, ServiceSearchParams, Customer } from '../../models';
+import { Service, ServiceCategory, AdditionalService, ServiceSearchParams, Customer, PaymentMethod, PaymentStatus, Vehicle } from '../../models';
 import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-services',
@@ -25,29 +26,33 @@ export class ServicesComponent implements OnInit, OnDestroy {
   searchTerm = '';
   categoryFilter = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
+  vehicles: Vehicle[] = [];
 
   serviceForm: FormGroup;
   additionalServiceForm: FormGroup;
   stats: {
     total: number;
-    active: number;
-    inactive: number;
+    completed: number;
+    canceled: number;
     byCategory: { category: ServiceCategory; count: number }[];
     totalRevenue: number;
     averagePrice: number;
   } = {
       total: 0,
-      active: 0,
-      inactive: 0,
+      completed: 0,
+      canceled: 0,
       byCategory: [],
       totalRevenue: 0,
       averagePrice: 0
     };
+
+
   availableCategories: ServiceCategory[] = [];
   additionalServices: AdditionalService[] = [];
   selectedAdditionalServices: number[] = [];
   customers: Customer[] = [];
-
+  paymentMethods = Object.values(PaymentMethod);
+  paymentStatuses = Object.values(PaymentStatus);
   private destroy$ = new Subject<void>();
 
   // Paginação
@@ -58,14 +63,20 @@ export class ServicesComponent implements OnInit, OnDestroy {
   constructor(
     private api: ApiService,
     private fb: FormBuilder,
-    private paginationService: PaginationService
+    private paginationService: PaginationService,
+    private toast: ToastrService
   ) {
     this.serviceForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', [Validators.required, Validators.minLength(10)]],
+      description: [''],
       customerId: ['', Validators.required],
       category: ['', Validators.required],
       basePrice: ['', [Validators.required, Validators.min(0)]],
+      vehicleId: [''],
+      dueDate: [''],
+      paymentMethod: ['', Validators.required],
+      paymentStatus: [PaymentStatus.PENDING, Validators.required],
+
     });
 
     this.additionalServiceForm = this.fb.group({
@@ -77,7 +88,6 @@ export class ServicesComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadServices();
-    this.loadStats();
     this.loadAvailableCategories();
     this.loadAdditionalServices();
     this.loadCustomers();
@@ -116,21 +126,29 @@ export class ServicesComponent implements OnInit, OnDestroy {
   }
 
   loadServices() {
-    this.api.getAll('services', { isActive: 'eq.true' }, ['services_with_addons!left(serviceIdOddons(*))'])
+    this.api.getAll('services', undefined, ['services_with_addons!left(serviceIdOddons(*))'])
       .pipe(takeUntil(this.destroy$))
       .subscribe(services => {
         this.services = services;
         this.applyFilters();
+        this.updateStats(services);
       });
   }
 
-  loadStats() {
-    // this.serviceService.getServiceStats()
-    //   .pipe(takeUntil(this.destroy$))
-    //   .subscribe(stats => {
-    //     this.stats = stats;
-    //   });
+  updateStats(services: Service[]) {
+    this.stats.total = services.length;
+
+    this.stats.completed = services.filter(s => s.paymentStatus === 'paid').length;
+    this.stats.canceled = services.filter(s => s.paymentStatus === 'refunded').length;
+
+    this.stats.totalRevenue = services
+      .filter(s => s.paymentStatus === 'paid')
+      .reduce((sum, s) => sum + (s.basePrice || 0) +
+        (s.services_with_addons?.reduce((a, b) => a + (b.serviceIdOddons?.additionalPrice || 0), 0) || 0), 0);
+
+    this.stats.averagePrice = this.stats.total > 0 ? this.stats.totalRevenue / this.stats.total : 0;
   }
+
 
   loadAvailableCategories() {
     this.availableCategories = (Object.values(ServiceCategory));
@@ -212,18 +230,25 @@ export class ServicesComponent implements OnInit, OnDestroy {
     this.isCreating = false;
     this.selectedService = service;
 
-    // Extrai os IDs dos addons
     this.selectedAdditionalServices = (service.services_with_addons || [])
       .map((item: any) => item.serviceIdOddons.id);
 
-    // Preenche o form
     this.serviceForm.patchValue({
       name: service.name,
       description: service.description,
+      customerId: service.customerId,
       category: service.category,
       basePrice: service.basePrice,
-      additionalServices: this.selectedAdditionalServices // IDs já extraídos
+      vehicleId: service.vehicleId,
+      dueDate: service.dueDate,
+      paymentMethod: service.paymentMethod,
+      paymentStatus: service.paymentStatus,
+      additionalServices: this.selectedAdditionalServices
     });
+
+    this.serviceForm.get('customerId')?.disable();
+
+    this.loadVehiclesByCustomerId();
 
     console.log('Serviço selecionado para edição:', service);
     console.log('Addons selecionados:', this.selectedAdditionalServices);
@@ -237,50 +262,86 @@ export class ServicesComponent implements OnInit, OnDestroy {
     this.showForm = false;
   }
 
-
   saveService() {
-    if (!this.serviceForm.valid) return;
+    if (!this.serviceForm.valid) {
+      // Loga campos inválidos
+      Object.keys(this.serviceForm.controls).forEach(field => {
+        const control = this.serviceForm.get(field);
+        if (control && control.invalid) {
+          console.log(`Campo inválido: ${field}`, control.errors);
+        }
+      });
+      this.toast.error('Existem campos inválidos no formulário.');
+      return;
+    }
 
     const formValue = this.serviceForm.value;
+    this.toast.info('Salvando serviço...', '', { disableTimeOut: true, toastClass: 'ngx-toastr loading-toast' });
 
     if (this.isCreating) {
-      console.log('Criando serviço:', formValue);
+      this.api.create('services', { ...formValue }).subscribe({
+        next: (services: any[]) => {
+          const service = services[0];
 
-      this.api.create('services', { ...formValue, isActive: true }).subscribe((services: any[]) => {
-        const service = services[0];
-
-        const addons = this.selectedAdditionalServices.map((addonId: any) => ({
-          serviceID: service.id,
-          serviceIdOddons: addonId
-        }));
-
-        this.api.create('services_with_addons', addons).subscribe((res: any) => {
-          console.log('Addons criados:', res);
-
-          this.closeForm();
-          this.loadServices();
-          this.loadStats();
-        });
-      });
-    } else if (this.isEditing && this.selectedService) {
-
-      this.api.update('services', this.selectedService.id, formValue).subscribe((services: any[]) => {
-        // Primeiro deleta os addons antigos
-        this.api.deleteByColumn(`services_with_addons`, 'serviceID', this.selectedService!.id).subscribe(() => {
           const addons = this.selectedAdditionalServices.map((addonId: any) => ({
-            serviceID: this.selectedService!.id,
+            serviceID: service.id,
             serviceIdOddons: addonId
           }));
 
-
-          this.api.create('services_with_addons', addons).subscribe((res: any) => {
-            console.log('Addons criados:', res);
-
-            this.closeForm();
-            this.loadServices();
-            this.loadStats();
+          this.api.create('services_with_addons', addons).subscribe({
+            next: (res: any) => {
+              console.log('Addons criados:', res);
+              this.toast.clear();
+              this.toast.success('Serviço criado com sucesso!');
+              this.closeForm();
+              this.loadServices();
+            },
+            error: () => {
+              this.toast.clear();
+              this.toast.error('Erro ao criar addons.');
+            }
           });
-        });
+        },
+        error: () => {
+          this.toast.clear();
+          this.toast.error('Erro ao criar o serviço.');
+        }
+      });
+
+    } else if (this.isEditing && this.selectedService) {
+      this.api.update('services', this.selectedService.id, formValue).subscribe({
+        next: () => {
+          this.api.deleteByColumn('services_with_addons', 'serviceID', this.selectedService!.id).subscribe({
+            next: () => {
+              const addons = this.selectedAdditionalServices.map((addonId: any) => ({
+                serviceID: this.selectedService!.id,
+                serviceIdOddons: addonId
+              }));
+
+              this.api.create('services_with_addons', addons).subscribe({
+                next: (res: any) => {
+                  console.log('Addons criados:', res);
+                  this.toast.clear();
+                  this.toast.success('Serviço atualizado com sucesso!');
+                  this.closeForm();
+                  this.loadServices();
+                },
+                error: () => {
+                  this.toast.clear();
+                  this.toast.error('Erro ao criar addons.');
+                }
+              });
+            },
+            error: () => {
+              this.toast.clear();
+              this.toast.error('Erro ao remover addons antigos.');
+            }
+          });
+        },
+        error: () => {
+          this.toast.clear();
+          this.toast.error('Erro ao atualizar o serviço.');
+        }
       });
     }
   }
@@ -334,16 +395,14 @@ export class ServicesComponent implements OnInit, OnDestroy {
   }
 
   deactivateService(service: Service) {
-    this.api.update('service', service.id, { isActive: false }).subscribe(() => {
+    this.api.update('service', service.id, { paymentStatus: 'Cancelado' }).subscribe(() => {
       this.loadServices();
-      this.loadStats();
     });
   }
 
   activateService(service: Service) {
-    this.api.update('service', service.id, { isActive: true }).subscribe(() => {
+    this.api.update('service', service.id, { paymentStatus: '' }).subscribe(() => {
       this.loadServices();
-      this.loadStats();
     });
   }
 
@@ -372,13 +431,6 @@ export class ServicesComponent implements OnInit, OnDestroy {
     }
   }
 
-  getStatusBadgeClass(service: Service): string {
-    return service.isActive ? 'active' : 'inactive';
-  }
-
-  getStatusText(service: Service): string {
-    return service.isActive ? 'Ativo' : 'Inativo';
-  }
 
   getAdditionalServicesText(service: Service): string {
 
@@ -409,5 +461,62 @@ export class ServicesComponent implements OnInit, OnDestroy {
     }
 
     return total;
+  }
+
+  getPaymentMethodText(method: PaymentMethod): string {
+    switch (method) {
+      case PaymentMethod.CASH: return 'Dinheiro';
+      case PaymentMethod.CREDIT_CARD: return 'Cartão de Crédito';
+      case PaymentMethod.DEBIT_CARD: return 'Cartão de Débito';
+      case PaymentMethod.PIX: return 'PIX';
+      case PaymentMethod.BANK_TRANSFER: return 'Transferência Bancária';
+      case PaymentMethod.CHECK: return 'Cheque';
+      case PaymentMethod.INSTALLMENT: return 'Parcelado';
+      default: return method;
+    }
+  }
+
+  getPaymentStatusText(status: PaymentStatus): string {
+    switch (status) {
+      case PaymentStatus.PAID: return 'Pago';
+      case PaymentStatus.PENDING: return 'Pendente';
+      case PaymentStatus.CANCELLED: return 'Cancelado';
+      case PaymentStatus.REFUNDED: return 'Reembolsado';
+      default: return status;
+    }
+  }
+  getPaymentStatusClass(status: PaymentStatus): string {
+    switch (status) {
+      case PaymentStatus.PAID: return 'paid';
+      case PaymentStatus.PENDING: return 'pending';
+      case PaymentStatus.CANCELLED: return 'cancelled';
+      case PaymentStatus.REFUNDED: return 'refunded';
+      default: return '';
+    }
+  }
+
+
+  loadVehiclesByCustomerId() {
+    this.api.getByColumn('vehicles', 'customerId', this.serviceForm.get('customerId')?.value)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((vehicles: any[]) => {
+        this.vehicles = vehicles.map(vehicle => ({
+          id: vehicle.id,
+          customerId: vehicle.customerId,
+          licensePlate: vehicle.licensePlate,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          color: vehicle.color,
+          observations: vehicle.observations,
+          isActive: vehicle.isActive,
+          createdAt: vehicle.createdAt ? new Date(vehicle.createdAt) : new Date(),
+          updatedAt: vehicle.updatedAt ? new Date(vehicle.updatedAt) : new Date()
+        }));
+      });
+  }
+  onCustomerChange() {
+    this.serviceForm.patchValue({ vehicleId: '' });
+    this.loadVehiclesByCustomerId();
   }
 }

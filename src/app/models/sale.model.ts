@@ -20,6 +20,7 @@ export interface Sale {
   notes?: string;
   date: Date; // Data da venda
   createdAt: Date;
+  dueDate?: Date;
   updatedAt: Date;
   createdBy: number; // ID do usuário
 }

@@ -110,7 +110,7 @@
           <th>Total</th>
           <th>Pagamento</th>
           <th>Status</th>
-          <th>Data</th>
+          <th>Dt. Vencimento </th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -132,7 +132,7 @@
           <td>
             <div class="total-info">
               <span class="total">{{ formatCurrency(sale.total) }}</span>
-              <span *ngIf="sale.discount > 0" class="discount" title="Desconto" > 
+              <span *ngIf="sale.discount > 0" class="discount" title="Desconto">
                 -{{ formatCurrency(totalDiscount(sale)) }}
               </span>
             </div>
@@ -146,7 +146,7 @@
             </span>
           </td>
           <td>
-            <span class="sale-date">{{ formatDate(sale.createdAt) }}</span>
+            <span class="sale-date">{{ (sale.dueDate | date: 'dd/MM/yyyy') }}</span>
           </td>
           <td>
             <div class="action-buttons">
@@ -172,10 +172,7 @@
     </div>
 
     <!-- Paginação -->
-    <app-pagination
-      [currentPage]="currentPage"
-      [pageSize]="pageSize"
-      [totalItems]="filteredSales.length"
+    <app-pagination [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="filteredSales.length"
       (pageChange)="onPageChange($event)">
     </app-pagination>
   </div>
@@ -219,14 +216,6 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="date">Data da Venda *</label>
-            <input type="date" id="date" formControlName="date" class="form-input">
-            <div *ngIf="saleForm.get('date')?.invalid && saleForm.get('date')?.touched" class="error-message">
-              Data da venda é obrigatória
-            </div>
-          </div>
-
-          <div class="form-group">
             <label for="paymentMethod">Método de Pagamento *</label>
             <select id="paymentMethod" formControlName="paymentMethod" class="form-select">
               <option value="">Selecione o método</option>
@@ -239,12 +228,9 @@
               Método de pagamento é obrigatório
             </div>
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-group">
             <label for="paymentStatus">Status do Pagamento *</label>
-            <select id="paymentStatus" formControlName="paymentStatus" class="form-select">
+            <select id="paymentStatus" formControlName="paymentStatus"  (change)="resetDateDue()" class="form-select">
               <option *ngFor="let status of paymentStatuses" [value]="status">
                 {{ getPaymentStatusText(status) }}
               </option>
@@ -254,6 +240,11 @@
               Status do pagamento é obrigatório
             </div>
           </div>
+          <div *ngIf="saleForm.get('paymentStatus')?.value === 'pending'" class="form-group">
+            <label for="dueDate">Data do Vencimento*</label>
+            <input type="date" id="dueDate" formControlName="dueDate" class="form-input">
+          </div>
+
         </div>
 
         <!-- Itens da Venda -->
@@ -382,6 +373,10 @@
         <div class="detail-row">
           <label>Data da Venda:</label>
           <span>{{ formatDate(selectedSale.date) }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Data do vendimento :</label>
+          <span>{{ selectedSale.dueDate ? formatDate(selectedSale.dueDate) : '' }}</span>
         </div>
         <div class="detail-row">
           <label>Método de Pagamento:</label>

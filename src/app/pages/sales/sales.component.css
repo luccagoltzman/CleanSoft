@@ -140,6 +140,7 @@
   transition: border-color 0.3s;
 }
 
+
 .filter-select:focus,
 .filter-date:focus {
   outline: none;
@@ -242,6 +243,12 @@
   background: rgba(244, 67, 54, 0.1);
   color: var(--error-color);
 }
+
+.status-badge.refunded {
+  background: rgba(255, 218, 215, 0.1);
+  color: var(--error-color);
+}
+
 
 .sale-date {
   color: var(--text-secondary);

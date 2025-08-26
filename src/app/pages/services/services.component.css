@@ -618,3 +618,29 @@
     padding: 8px;
   }
 }
+
+
+.status-badge.paid {
+  background: rgba(76, 175, 80, 0.1);
+  color: var(--success-color);
+}
+
+.status-badge.pending {
+  background: rgba(255, 193, 7, 0.1);
+  color: var(--warning-color);
+}
+
+.status-badge.cancelled {
+  background: rgba(244, 67, 54, 0.1);
+  color: var(--error-color);
+}
+
+.status-badge.refunded {
+  background: rgba(117, 117, 117, 0.1);
+}
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}

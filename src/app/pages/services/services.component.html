@@ -27,24 +27,27 @@
         <p>Total de Serviços</p>
       </div>
     </div>
+
     <div class="stat-card">
       <div class="stat-icon active">
         <i class="fas fa-check-circle"></i>
       </div>
       <div class="stat-content">
-        <h3>{{ stats.active }}</h3>
-        <p>Serviços Ativos</p>
+        <h3>{{ stats.completed }}</h3>
+        <p>Serviços Concluídos</p>
       </div>
     </div>
+
     <div class="stat-card">
       <div class="stat-icon inactive">
-        <i class="fas fa-times-circle"></i>
+        <i class="fas fa-ban"></i>
       </div>
       <div class="stat-content">
-        <h3>{{ stats.inactive }}</h3>
-        <p>Serviços Inativos</p>
+        <h3>{{ stats.canceled }}</h3>
+        <p>Serviços Cancelados</p>
       </div>
     </div>
+
     <div class="stat-card">
       <div class="stat-icon revenue">
         <i class="fas fa-dollar-sign"></i>
@@ -55,6 +58,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- Filtros e Busca -->
   <div class="filters-section">
@@ -72,11 +76,11 @@
         </option>
       </select>
 
-      <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
+      <!-- <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
         <option value="all">Todos os Status</option>
         <option value="active">Ativos</option>
         <option value="inactive">Inativos</option>
-      </select>
+      </select> -->
     </div>
   </div>
 
@@ -120,8 +124,8 @@
             <span class="additional-services">{{ getAdditionalServicesText(service) }}</span>
           </td>
           <td>
-            <span class="status-badge" [class]="getStatusBadgeClass(service)">
-              {{ getStatusText(service) }}
+            <span class="status-badge" [class]="getPaymentStatusClass(service.paymentStatus)">
+              {{ getPaymentStatusText(service.paymentStatus) }}
             </span>
           </td>
           <td>
@@ -168,28 +172,14 @@
       </div>
 
       <form [formGroup]="serviceForm" (ngSubmit)="saveService()" class="service-form">
+
+        <!-- Linha 1: Nome e Categoria -->
         <div class="form-row">
           <div class="form-group">
             <label for="name">Nome *</label>
             <input type="text" id="name" formControlName="name" placeholder="Nome do serviço" class="form-input">
             <div *ngIf="serviceForm.get('name')?.invalid && serviceForm.get('name')?.touched" class="error-message">
               Nome é obrigatório e deve ter pelo menos 3 caracteres
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="customerId">Cliente *</label>
-              <select id="customerId" formControlName="customerId" class="form-select">
-                <option value="">Selecione um cliente</option>
-                <option *ngFor="let customer of customers" [value]="customer.id">
-                  {{ customer.name }} - {{ customer.phone }}
-                </option>
-              </select>
-              <div *ngIf="serviceForm.get('customerId')?.invalid && serviceForm.get('customerId')?.touched"
-                class="error-message">
-                Cliente é obrigatório
-              </div>
             </div>
           </div>
 
@@ -208,28 +198,77 @@
           </div>
         </div>
 
+        <!-- Linha 2: Cliente e Veículo -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customerId">Cliente *</label>
+            <select id="customerId" formControlName="customerId" (change)="onCustomerChange()" class="form-select">
+              <option value="">Selecione um cliente</option>
+              <option *ngFor="let customer of customers" [value]="customer.id">
+                {{ customer.name }} - {{ customer.phone }}
+              </option>
+            </select>
+            <div *ngIf="serviceForm.get('customerId')?.invalid && serviceForm.get('customerId')?.touched"
+              class="error-message">
+              Cliente é obrigatório
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="vehicleId">Veículo</label>
+            <select id="vehicleId" formControlName="vehicleId" class="form-select">
+              <option value="">Selecione um veículo (opcional)</option>
+              <option *ngFor="let vehicle of vehicles" [value]="vehicle.id">
+                {{ vehicle.licensePlate }} - {{ vehicle.brand }} {{ vehicle.model }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Linha 3: Pagamento e Status -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="paymentMethod">Método de Pagamento *</label>
+            <select id="paymentMethod" formControlName="paymentMethod" class="form-select">
+              <option value="">Selecione o método</option>
+              <option *ngFor="let method of paymentMethods" [value]="method">
+                {{ getPaymentMethodText(method) }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="paymentStatus">Status do Pagamento *</label>
+            <select id="paymentStatus" formControlName="paymentStatus" class="form-select">
+              <option *ngFor="let status of paymentStatuses" [value]="status">
+                {{ getPaymentStatusText(status) }}
+              </option>
+            </select>
+          </div>
+
+          <div *ngIf="serviceForm.get('paymentStatus')?.value === 'pending'" class="form-group">
+            <label for="dueDate">Data do Vencimento*</label>
+            <input type="date" id="dueDate" formControlName="dueDate" class="form-input">
+          </div>
+        </div>
+
+        <!-- Descrição -->
         <div class="form-group">
           <label for="description">Descrição *</label>
           <textarea id="description" formControlName="description" placeholder="Descrição detalhada do serviço"
             class="form-textarea" rows="3"></textarea>
-          <div *ngIf="serviceForm.get('description')?.invalid && serviceForm.get('description')?.touched"
-            class="error-message">
-            Descrição é obrigatória e deve ter pelo menos 10 caracteres
-          </div>
         </div>
 
+        <!-- Preço Base -->
         <div class="form-row">
           <div class="form-group">
             <label for="basePrice">Preço Base *</label>
             <input type="number" id="basePrice" formControlName="basePrice" placeholder="0.00" class="form-input"
               step="0.01" min="0">
-            <div *ngIf="serviceForm.get('basePrice')?.invalid && serviceForm.get('basePrice')?.touched"
-              class="error-message">
-              Preço base é obrigatório e deve ser maior que zero
-            </div>
           </div>
         </div>
 
+        <!-- Serviços Adicionais -->
         <div class="form-group">
           <label>Serviços Adicionais</label>
           <div class="additional-services-grid">
@@ -247,13 +286,10 @@
           </div>
         </div>
 
+        <!-- Botões -->
         <div class="form-actions">
-          <button type="button" class="btn-secondary" (click)="closeForm()">
-            Cancelar
-          </button>
-          <button type="submit" class="btn-primary" [disabled]="serviceForm.invalid">
-            {{ isCreating ? 'Criar' : 'Salvar' }}
-          </button>
+          <button type="button" class="btn-secondary" (click)="closeForm()">Cancelar</button>
+          <button type="submit" class="btn-primary">{{ isCreating ? 'Criar' : 'Salvar' }}</button>
         </div>
       </form>
     </div>
@@ -281,7 +317,7 @@
         </div>
 
         <div class="form-group">
-          <label for="additionalDescription">Descrição *</label>
+          <label for="additionalDescription">Descrição </label>
           <textarea id="additionalDescription" formControlName="description"
             placeholder="Descrição do serviço adicional" class="form-textarea" rows="3"></textarea>
           <div
@@ -353,17 +389,13 @@
         </div>
         <div class="detail-row">
           <label>Status:</label>
-          <span class="status-badge" [class]="getStatusBadgeClass(selectedService)">
-            {{ getStatusText(selectedService) }}
+          <span class="status-badge" [class]="getPaymentStatusClass(selectedService.paymentStatus)">
+            {{ getPaymentStatusText(selectedService.paymentStatus) }}
           </span>
         </div>
         <div class="detail-row">
           <label>Data de Cadastro:</label>
           <span>{{ selectedService.createdAt | date:'dd/MM/yyyy' }}</span>
-        </div>
-        <div class="detail-row">
-          <label>Última Atualização:</label>
-          <span>{{ selectedService.updatedAt | date:'dd/MM/yyyy' }}</span>
         </div>
       </div>
 
@@ -374,12 +406,7 @@
         <button class="btn-primary" (click)="editService(selectedService)">
           Editar
         </button>
-        <button *ngIf="selectedService.isActive" class="btn-warning" (click)="deactivateService(selectedService)">
-          Desativar
-        </button>
-        <button *ngIf="!selectedService.isActive" class="btn-success" (click)="activateService(selectedService)">
-          Ativar
-        </button>
+      
       </div>
     </div>
   </div>

@@ -1,9 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
-import { SaleService } from '../../services/sale.service';
 import { Sale, SaleItem, PaymentMethod, PaymentStatus, Customer, Vehicle, Product, Service } from '../../models';
-import { Subject, takeUntil, combineLatest, forkJoin, throwError, switchMap } from 'rxjs';
+import { Subject, takeUntil, forkJoin, throwError, switchMap } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
@@ -63,7 +62,6 @@ export class SalesComponent implements OnInit, OnDestroy {
   paginatedSales: Sale[] = [];
 
   constructor(
-    private saleService: SaleService,
     private api: ApiService,
     private fb: FormBuilder,
     private paginationService: PaginationService,
@@ -77,7 +75,8 @@ export class SalesComponent implements OnInit, OnDestroy {
       paymentMethod: ['', Validators.required],
       paymentStatus: [PaymentStatus.PENDING, Validators.required],
       notes: [''],
-      date: [new Date(), Validators.required]
+      date: [''],
+      dueDate: ['']
     });
   }
 
@@ -108,6 +107,7 @@ export class SalesComponent implements OnInit, OnDestroy {
         createdAt: sale.createdAt,
         updatedAt: sale.updatedAt,
         createdBy: sale.createdBy || 1,
+        dueDate: sale.dueDate,
         items: sale.sale_items ? sale.sale_items.map((item: any) => ({
           id: item.id,
           saleId: item.saleId,
@@ -187,8 +187,11 @@ export class SalesComponent implements OnInit, OnDestroy {
           isActive: product.isActive !== undefined ? product.isActive : true,
           supplierId: product.supplierId || 1,
           createdAt: product.createdAt,
-          updatedAt: product.updatedAt
+          updatedAt: product.updatedAt,
+
         }));
+
+
       });
   }
 
@@ -331,6 +334,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       date: sale.date
     });
     this.loadVehiclesByCustomerId();
+    this.saleForm.get('customerId')?.disable();
 
     this.saleForm.patchValue({ vehicleId: sale.vehicleId });
     this.showForm = true;
@@ -350,6 +354,8 @@ export class SalesComponent implements OnInit, OnDestroy {
 
     return itemDiscounts + (sale?.discount ?? 0);
   }
+
+
 
   saveSale() {
     if (!this.saleForm.valid || this.items.length === 0) return;
@@ -375,6 +381,7 @@ export class SalesComponent implements OnInit, OnDestroy {
       paymentStatus: formValue.paymentStatus || 'pending',
       notes: formValue.notes || '',
       createdAt: new Date(),
+      dueDate: formValue.dueDate,
     };
 
     const processItems = (saleId: number) => {
@@ -389,7 +396,6 @@ export class SalesComponent implements OnInit, OnDestroy {
           notes: item.notes || ''
         };
 
-        console.log('itemData', itemData);
 
         if (itemData.productId) {
           const product = this.products.find((p: any) => p.id == itemData.productId);
@@ -659,7 +665,13 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   onCustomerChange() {
-    this.saleForm.patchValue({ vehicleId: '' });
     this.loadVehiclesByCustomerId();
+  }
+
+
+   resetDateDue() {
+    console.log('resetnado data')
+        this.saleForm.patchValue({ dueDate : null });
+
   }
 }

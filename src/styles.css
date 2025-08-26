@@ -86,3 +86,8 @@
     padding: 15px;
   }
 }
+
+select{
+  cursor: pointer;
+
+}
