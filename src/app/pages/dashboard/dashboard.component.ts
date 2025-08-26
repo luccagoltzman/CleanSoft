@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   monthlyGoalPercentage: number = 0;
 
   private salesChart: Chart | null = null;
-  private servicesChart: Chart | null = null;
+  private servicesChart: any = null;
 
   constructor() {}
 
