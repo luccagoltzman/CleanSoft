@@ -1,18 +1,27 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Customer, CustomerSearchParams } from '../../models';
-import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Customer } from '../../models';
+import { Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { ModalComponent } from '../../shared/components';
-import { ModalConfig } from '../../shared/components/modal/modal.types';
+import { SpinnerComponent } from '../../shared/spinner/spinner.component';
+import { trigger, style, animate, transition } from '@angular/animations';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ModalComponent, SpinnerComponent],
   templateUrl: './customers.component.html',
-  styleUrl: './customers.component.css'
+  styleUrl: './customers.component.css',
+    animations: [
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('300ms ease-in', style({ opacity: 1 }))
+      ])
+    ])
+  ]
 })
 export class CustomersComponent implements OnInit, OnDestroy {
   customers: Customer[] = [];
@@ -24,7 +33,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
   searchTerm = '';
   documentTypeFilter: 'CPF' | 'CNPJ' | 'all' = 'all';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
-
+  loading = false;
   customerForm: FormGroup;
   stats = { total: 0, active: 0, inactive: 0, withVehicles: 0 };
 
@@ -57,9 +66,11 @@ export class CustomersComponent implements OnInit, OnDestroy {
   }
 
   loadCustomers() {
+    this.loading = true;
     this.api.getAll('clients', { select: '*,vehicles(*)' })
       .pipe(takeUntil(this.destroy$))
       .subscribe(customers => {
+        this.loading = false;
         this.customers = customers;
         this.applyFilters();
         this.loadStats();
@@ -178,12 +189,12 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   toggleCustomerStatus(customer: Customer) {
     if (customer.isActive) {
-      this.api.update('clients',customer.id,{isActive: false}).subscribe(() => {
+      this.api.update('clients', customer.id, { isActive: false }).subscribe(() => {
         this.loadCustomers();
         this.loadStats();
       });
     } else {
-      this.api.update('clients',customer.id,{isActive: true}).subscribe(() => {
+      this.api.update('clients', customer.id, { isActive: true }).subscribe(() => {
         this.loadCustomers();
         this.loadStats();
       });
