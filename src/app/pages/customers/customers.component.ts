@@ -4,24 +4,17 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Customer } from '../../models';
 import { Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
-import { ModalComponent } from '../../shared/components';
-<<<<<<< HEAD
-import { ModalConfig } from '../../shared/components/modal/modal.types';
+
+
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
-=======
 import { SpinnerComponent } from '../../shared/spinner/spinner.component';
 import { trigger, style, animate, transition } from '@angular/animations';
->>>>>>> e06228a57ede5d16b98c5d70c8e4941f3e395f45
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-<<<<<<< HEAD
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ModalComponent, PaginationComponent],
-=======
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ModalComponent, SpinnerComponent],
->>>>>>> e06228a57ede5d16b98c5d70c8e4941f3e395f45
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, SpinnerComponent],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css',
     animations: [
