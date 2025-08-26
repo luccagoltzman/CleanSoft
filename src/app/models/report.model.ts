@@ -39,8 +39,8 @@ export interface CustomerReport {
 // Relatórios de Serviços (RF34)
 export interface ServiceReport {
   period: 'daily' | 'weekly' | 'monthly' | 'yearly';
-  startDate: Date;
-  endDate: Date;
+  startDate?: Date;
+  endDate?: Date;
   totalServices: number;
   totalRevenue: number;
   averageTicket: number;
@@ -66,8 +66,8 @@ export interface ServiceReport {
 // Relatórios de Produtos (RF35)
 export interface ProductReport {
   period: 'daily' | 'weekly' | 'monthly' | 'yearly';
-  startDate: Date;
-  endDate: Date;
+  startDate?: Date;
+  endDate?: Date;
   totalProducts: number;
   totalRevenue: number;
   averagePrice: number;
