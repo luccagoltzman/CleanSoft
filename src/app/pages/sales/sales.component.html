@@ -116,7 +116,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let sale of filteredSales" class="sale-row">
+        <tr *ngFor="let sale of paginatedSales" class="sale-row">
           <td>
             <div class="customer-info">
               <strong>{{ getCustomerName(sale.customerId) }}</strong>
@@ -178,6 +178,14 @@
       <i class="fas fa-search"></i>
       <p>Nenhuma venda encontrada com os filtros aplicados.</p>
     </div>
+
+    <!-- Paginação -->
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="filteredSales.length"
+      (pageChange)="onPageChange($event)">
+    </app-pagination>
   </div>
 
   <!-- Formulário de Venda -->

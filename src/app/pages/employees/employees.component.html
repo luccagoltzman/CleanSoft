@@ -102,7 +102,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let employee of filteredEmployees" class="employee-row">
+        <tr *ngFor="let employee of paginatedEmployees" class="employee-row">
           <td>
             <div class="employee-info">
               <strong>{{ employee.name }}</strong>
@@ -161,6 +161,14 @@
       <i class="fas fa-search"></i>
       <p>Nenhum funcionário encontrado com os filtros aplicados.</p>
     </div>
+
+    <!-- Paginação -->
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="filteredEmployees.length"
+      (pageChange)="onPageChange($event)">
+    </app-pagination>
   </div>
 
   <!-- Formulário de Funcionário -->

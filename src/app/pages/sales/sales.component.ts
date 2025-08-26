@@ -5,11 +5,13 @@ import { SaleService } from '../../services/sale.service';
 import { Sale, SaleItem, PaymentMethod, PaymentStatus, Customer, Vehicle, Product, Service } from '../../models';
 import { Subject, takeUntil, combineLatest, forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
+import { PaginationService } from '../../shared/services/pagination.service';
 
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
   templateUrl: './sales.component.html',
   styleUrl: './sales.component.css'
 })
@@ -54,10 +56,16 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  // Paginação
+  currentPage = 1;
+  pageSize = 10;
+  paginatedSales: Sale[] = [];
+
   constructor(
     private saleService: SaleService,
     private api: ApiService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private paginationService: PaginationService
   ) {
     this.saleForm = this.fb.group({
       customerId: ['', Validators.required],
@@ -180,6 +188,7 @@ export class SalesComponent implements OnInit, OnDestroy {
     }
 
     this.filteredSales = filtered;
+    this.updatePaginatedSales();
   }
 
   onSearchChange() {
@@ -200,6 +209,20 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   onDateFilterChange() {
     this.applyFilters();
+  }
+
+  // Métodos de paginação
+  updatePaginatedSales() {
+    this.paginatedSales = this.paginationService.paginate(
+      this.filteredSales,
+      this.currentPage,
+      this.pageSize
+    );
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+    this.updatePaginatedSales();
   }
 
   createSale() {

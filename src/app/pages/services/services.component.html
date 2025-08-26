@@ -109,7 +109,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let service of filteredServices" class="service-row">
+        <tr *ngFor="let service of paginatedServices" class="service-row">
           <td>
             <div class="service-info">
               <strong>{{ service.name }}</strong>
@@ -171,6 +171,14 @@
       <i class="fas fa-search"></i>
       <p>Nenhum serviço encontrado com os filtros aplicados.</p>
     </div>
+
+    <!-- Paginação -->
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="filteredServices.length"
+      (pageChange)="onPageChange($event)">
+    </app-pagination>
   </div>
 
   <!-- Formulário de Serviço -->

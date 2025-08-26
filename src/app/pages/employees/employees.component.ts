@@ -4,11 +4,13 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Employee } from '../../models';
 import { of, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
+import { PaginationService } from '../../shared/services/pagination.service';
 
 @Component({
   selector: 'app-employees',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
   templateUrl: './employees.component.html',
   styleUrl: './employees.component.css'
 })
@@ -46,9 +48,15 @@ export class EmployeesComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  // Paginação
+  currentPage = 1;
+  pageSize = 10;
+  paginatedEmployees: Employee[] = [];
+
   constructor(
     private fb: FormBuilder,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private paginationService: PaginationService
   ) {
     this.employeeForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -158,6 +166,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     }
 
     this.filteredEmployees = filtered;
+    this.updatePaginatedEmployees();
   }
 
   onSearchChange() {
@@ -170,6 +179,20 @@ export class EmployeesComponent implements OnInit, OnDestroy {
 
   onStatusFilterChange() {
     this.applyFilters();
+  }
+
+  // Métodos de paginação
+  updatePaginatedEmployees() {
+    this.paginatedEmployees = this.paginationService.paginate(
+      this.filteredEmployees,
+      this.currentPage,
+      this.pageSize
+    );
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+    this.updatePaginatedEmployees();
   }
 
   createEmployee() {

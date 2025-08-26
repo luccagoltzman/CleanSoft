@@ -109,7 +109,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let vehicle of filteredVehicles" class="vehicle-row">
+        <tr *ngFor="let vehicle of paginatedVehicles" class="vehicle-row">
           <td>
             <span class="license-plate">{{ formatLicensePlate(vehicle.licensePlate) }}</span>
           </td>
@@ -165,6 +165,14 @@
       <i class="fas fa-search"></i>
       <p>Nenhum veículo encontrado com os filtros aplicados.</p>
     </div>
+
+    <!-- Paginação -->
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="filteredVehicles.length"
+      (pageChange)="onPageChange($event)">
+    </app-pagination>
   </div>
 
   <!-- Formulário de Veículo -->

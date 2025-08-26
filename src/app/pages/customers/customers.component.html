@@ -88,7 +88,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let customer of filteredCustomers" class="customer-row">
+        <tr *ngFor="let customer of paginatedCustomers" class="customer-row">
           <td>
             <div class="customer-info">
               <strong>{{ customer.name }}</strong>
@@ -135,6 +135,14 @@
       <i class="fas fa-search"></i>
       <p>Nenhum cliente encontrado com os filtros aplicados.</p>
     </div>
+
+    <!-- Paginação -->
+    <app-pagination
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="filteredCustomers.length"
+      (pageChange)="onPageChange($event)">
+    </app-pagination>
   </div>
 
   <!-- Formulário de Cliente -->

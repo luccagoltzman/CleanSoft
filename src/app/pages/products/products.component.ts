@@ -5,11 +5,13 @@ import { ProductService } from '../../services/product.service';
 import { Product, Supplier, StockMovementReason } from '../../models';
 import { of, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
+import { PaginationService } from '../../shared/services/pagination.service';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
   templateUrl: './products.component.html',
   styleUrl: './products.component.css'
 })
@@ -56,9 +58,15 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  // Paginação
+  currentPage = 1;
+  pageSize = 10;
+  paginatedProducts: Product[] = [];
+
   constructor(
     private fb: FormBuilder,
-    private api: ApiService
+    private api: ApiService,
+    private paginationService: PaginationService
   ) {
     this.productForm = this.fb.group({
       category: ['', Validators.required],
@@ -200,6 +208,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
     }
 
     this.filteredProducts = filtered;
+    this.updatePaginatedProducts();
   }
 
   onSearchChange() {
@@ -220,6 +229,20 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   onStockFilterChange() {
     this.applyFilters();
+  }
+
+  // Métodos de paginação
+  updatePaginatedProducts() {
+    this.paginatedProducts = this.paginationService.paginate(
+      this.filteredProducts,
+      this.currentPage,
+      this.pageSize
+    );
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+    this.updatePaginatedProducts();
   }
 
   createProduct() {

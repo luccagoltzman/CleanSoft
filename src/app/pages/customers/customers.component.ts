@@ -6,11 +6,13 @@ import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { ModalComponent } from '../../shared/components';
 import { ModalConfig } from '../../shared/components/modal/modal.types';
+import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
+import { PaginationService } from '../../shared/services/pagination.service';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ModalComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ModalComponent, PaginationComponent],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css'
 })
@@ -30,9 +32,15 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  // Paginação
+  currentPage = 1;
+  pageSize = 10;
+  paginatedCustomers: Customer[] = [];
+
   constructor(
     private fb: FormBuilder,
     private api: ApiService,
+    private paginationService: PaginationService
   ) {
     this.customerForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -103,6 +111,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
     }
 
     this.filteredCustomers = filtered;
+    this.updatePaginatedCustomers();
   }
 
   onSearchChange() {
@@ -115,6 +124,20 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   onStatusFilterChange() {
     this.applyFilters();
+  }
+
+  // Métodos de paginação
+  updatePaginatedCustomers() {
+    this.paginatedCustomers = this.paginationService.paginate(
+      this.filteredCustomers,
+      this.currentPage,
+      this.pageSize
+    );
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+    this.updatePaginatedCustomers();
   }
 
   createCustomer() {

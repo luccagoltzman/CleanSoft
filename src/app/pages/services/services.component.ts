@@ -4,11 +4,13 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Service, ServiceCategory, AdditionalService, ServiceSearchParams } from '../../models';
 import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
+import { PaginationService } from '../../shared/services/pagination.service';
 
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
   templateUrl: './services.component.html',
   styleUrl: './services.component.css'
 })
@@ -47,9 +49,15 @@ export class ServicesComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  // Paginação
+  currentPage = 1;
+  pageSize = 10;
+  paginatedServices: Service[] = [];
+
   constructor(
     private api: ApiService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private paginationService: PaginationService
   ) {
     this.serviceForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -133,6 +141,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
     }
 
     this.filteredServices = filtered;
+    this.updatePaginatedServices();
   }
 
   onSearchChange() {
@@ -145,6 +154,20 @@ export class ServicesComponent implements OnInit, OnDestroy {
 
   onStatusFilterChange() {
     this.applyFilters();
+  }
+
+  // Métodos de paginação
+  updatePaginatedServices() {
+    this.paginatedServices = this.paginationService.paginate(
+      this.filteredServices,
+      this.currentPage,
+      this.pageSize
+    );
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+    this.updatePaginatedServices();
   }
 
   createService() {

@@ -4,11 +4,13 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Vehicle, Customer } from '../../models';
 import { Subject, takeUntil, combineLatest, of, Observable } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
+import { PaginationService } from '../../shared/services/pagination.service';
 
 @Component({
   selector: 'app-vehicles',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
   templateUrl: './vehicles.component.html',
   styleUrl: './vehicles.component.css'
 })
@@ -85,9 +87,15 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  // Paginação
+  currentPage = 1;
+  pageSize = 10;
+  paginatedVehicles: Vehicle[] = [];
+
   constructor(
     private fb: FormBuilder,
-    private api: ApiService
+    private api: ApiService,
+    private paginationService: PaginationService
   ) {
     this.vehicleForm = this.fb.group({
       customerId: ['', Validators.required],
@@ -215,6 +223,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     }
 
     this.filteredVehicles = filtered;
+    this.updatePaginatedVehicles();
   }
 
   onSearchChange() {
@@ -231,6 +240,20 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   onStatusFilterChange() {
     this.applyFilters();
+  }
+
+  // Métodos de paginação
+  updatePaginatedVehicles() {
+    this.paginatedVehicles = this.paginationService.paginate(
+      this.filteredVehicles,
+      this.currentPage,
+      this.pageSize
+    );
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+    this.updatePaginatedVehicles();
   }
 
   createVehicle() {
