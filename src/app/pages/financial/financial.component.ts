@@ -68,6 +68,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
     totalExpense: 0,
     netCashFlow: 0
   };
+  today = new Date();
 
   // Enums para template
   cashMovementCategories = Object.values(CashMovementCategory);
@@ -183,30 +184,52 @@ export class FinancialComponent implements OnInit, OnDestroy {
   }
 
   updateStats() {
-    this.stats.totalPayables = this.accountsPayable.reduce((sum, a) => sum + a.amount, 0);
+    const today = new Date();
+
+    // Contas a Pagar
     this.stats.pendingPayables = this.accountsPayable
       .filter(a => a.status === 'pending')
       .reduce((sum, a) => sum + a.amount, 0);
+
     this.stats.overduePayables = this.accountsPayable
-      .filter(a => a.status === 'pending' && a.dueDate < new Date())
+      .filter(a => a.status === 'pending' && new Date(a.dueDate) < today)
       .reduce((sum, a) => sum + a.amount, 0);
 
-    this.stats.totalReceivables = this.accountsReceivable.reduce((sum, a) => sum + a.amount, 0);
+    // Contas a Receber
     this.stats.pendingReceivables = this.accountsReceivable
-      .filter(a => a.status === 'pending')
-      .reduce((sum, a) => sum + a.amount, 0);
+      .filter(r => r.status === 'pending')
+      .reduce((sum, r) => sum + r.amount, 0);
+
     this.stats.overdueReceivables = this.accountsReceivable
-      .filter(a => a.status === 'pending' && a.dueDate < new Date())
+      .filter(r => r.status === 'pending' && new Date(r.dueDate) < today)
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    // Fluxo de Caixa
+    const paidReceivables = this.accountsReceivable
+      .filter(r => r.status === 'paid')
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    const paidPayables = this.accountsPayable
+      .filter(a => a.status === 'paid')
       .reduce((sum, a) => sum + a.amount, 0);
 
-    this.stats.totalIncome = this.cashMovements
+    const incomeFromMovements = this.cashMovements
       .filter(m => m.type === 'income')
       .reduce((sum, m) => sum + m.amount, 0);
-    this.stats.totalExpense = this.cashMovements
+
+    const expenseFromMovements = this.cashMovements
       .filter(m => m.type === 'expense')
       .reduce((sum, m) => sum + m.amount, 0);
+
+    this.stats.totalIncome = paidReceivables + incomeFromMovements;
+    this.stats.totalExpense = paidPayables + expenseFromMovements;
     this.stats.netCashFlow = this.stats.totalIncome - this.stats.totalExpense;
+
+    // Total geral apenas para referência (opcional)
+    this.stats.totalPayables = this.stats.pendingPayables;
+    this.stats.totalReceivables = this.stats.pendingReceivables;
   }
+
 
   // Navegação entre abas
   setActiveTab(tab: 'overview' | 'payables' | 'receivables' | 'movements' | 'reports') {
@@ -521,9 +544,16 @@ export class FinancialComponent implements OnInit, OnDestroy {
   }
 
 
-  isOverdue(date: Date): boolean {
-    return date < new Date();
-  }
+ isOverdue(dueDate: string | Date): boolean {
+  const today = new Date();
+  today.setHours(0,0,0,0); // zera hora, minuto, segundo, ms
+
+  const due = new Date(dueDate);
+  due.setHours(0,0,0,0);
+
+  return due < today;
+}
+
 
   // Relatórios
   onReportPeriodChange() {
@@ -534,4 +564,17 @@ export class FinancialComponent implements OnInit, OnDestroy {
     // Implementar exportação para PDF/Excel
     console.log('Exportando relatório...');
   }
+
+  getUpcomingPayables(limit: number = 5, daysAhead: number = 7) {
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + daysAhead);
+
+    return this.accountsPayable
+      .filter(a => a.status === 'pending' && new Date(a.dueDate) <= maxDate)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, limit);
+  }
+
+
 }

@@ -4,27 +4,15 @@
     <div class="header-content">
       <h1>Gestão Financeira</h1>
       <div class="header-actions">
-        <button 
-          *ngIf="activeTab === 'payables'" 
-          class="btn-primary" 
-          (click)="createAccountPayable()"
-        >
+        <button *ngIf="activeTab === 'payables'" class="btn-primary" (click)="createAccountPayable()">
           <i class="fas fa-plus"></i>
           Nova Conta a Pagar
         </button>
-        <button 
-          *ngIf="activeTab === 'receivables'" 
-          class="btn-primary" 
-          (click)="createAccountReceivable()"
-        >
+        <button *ngIf="activeTab === 'receivables'" class="btn-primary" (click)="createAccountReceivable()">
           <i class="fas fa-plus"></i>
           Nova Conta a Receber
         </button>
-        <button 
-          *ngIf="activeTab === 'movements'" 
-          class="btn-primary" 
-          (click)="createCashMovement()"
-        >
+        <button *ngIf="activeTab === 'movements'" class="btn-primary" (click)="createCashMovement()">
           <i class="fas fa-plus"></i>
           Nova Movimentação
         </button>
@@ -34,43 +22,23 @@
 
   <!-- Navegação por Abas -->
   <div class="tabs-navigation">
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab === 'overview'"
-      (click)="setActiveTab('overview')"
-    >
+    <button class="tab-button" [class.active]="activeTab === 'overview'" (click)="setActiveTab('overview')">
       <i class="fas fa-chart-pie"></i>
       Visão Geral
     </button>
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab === 'payables'"
-      (click)="setActiveTab('payables')"
-    >
+    <button class="tab-button" [class.active]="activeTab === 'payables'" (click)="setActiveTab('payables')">
       <i class="fas fa-credit-card"></i>
       Contas a Pagar
     </button>
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab === 'receivables'"
-      (click)="setActiveTab('receivables')"
-    >
+    <button class="tab-button" [class.active]="activeTab === 'receivables'" (click)="setActiveTab('receivables')">
       <i class="fas fa-money-bill-wave"></i>
       Contas a Receber
     </button>
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab === 'movements'"
-      (click)="setActiveTab('movements')"
-    >
+    <button class="tab-button" [class.active]="activeTab === 'movements'" (click)="setActiveTab('movements')">
       <i class="fas fa-exchange-alt"></i>
       Movimentações
     </button>
-    <button 
-      class="tab-button" 
-      [class.active]="activeTab === 'reports'"
-      (click)="setActiveTab('reports')"
-    >
+    <button class="tab-button" [class.active]="activeTab === 'reports'" (click)="setActiveTab('reports')">
       <i class="fas fa-file-alt"></i>
       Relatórios
     </button>
@@ -78,97 +46,120 @@
 
   <!-- Conteúdo das Abas -->
   <div class="tab-content">
-    
+
     <!-- Visão Geral -->
     <div *ngIf="activeTab === 'overview'" class="overview-tab">
       <!-- Estatísticas -->
       <div class="stats-section">
-        <div class="stat-card">
-          <div class="stat-icon warning">
-            <i class="fas fa-credit-card"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ formatCurrency(stats.totalPayables) }}</h3>
-            <p>Total a Pagar</p>
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon danger">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ formatCurrency(stats.overduePayables) }}</h3>
-            <p>Vencidas</p>
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon success">
-            <i class="fas fa-money-bill-wave"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ formatCurrency(stats.totalReceivables) }}</h3>
-            <p>Total a Receber</p>
+
+        <!-- Seção Contas a Pagar -->
+        <div class="stats-group">
+          <h4>Contas a Pagar</h4>
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-icon warning">
+                <i class="fas fa-credit-card"></i>
+              </div>
+              <div class="stat-content">
+                <h3>{{ formatCurrency(stats.pendingPayables) }}</h3>
+                <p>Total a Pagar</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon danger">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div class="stat-content">
+                <h3>{{ formatCurrency(stats.overduePayables) }}</h3>
+                <p>Vencidas</p>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon danger">
-            <i class="fas fa-clock"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ formatCurrency(stats.overdueReceivables) }}</h3>
-            <p>Vencidas</p>
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon success">
-            <i class="fas fa-arrow-up"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ formatCurrency(stats.totalIncome) }}</h3>
-            <p>Receitas</p>
-          </div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon danger">
-            <i class="fas fa-arrow-down"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ formatCurrency(stats.totalExpense) }}</h3>
-            <p>Despesas</p>
+
+        <!-- Seção Contas a Receber -->
+        <div class="stats-group">
+          <h4>Contas a Receber</h4>
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-icon success">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <div class="stat-content">
+                <h3>{{ formatCurrency(stats.pendingReceivables) }}</h3>
+                <p>Total a Receber</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon danger">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="stat-content">
+                <h3>{{ formatCurrency(stats.overdueReceivables) }}</h3>
+                <p>Vencidas</p>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div class="stat-card">
-          <div class="stat-icon" [class]="stats.netCashFlow >= 0 ? 'success' : 'danger'">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <div class="stat-content">
-            <h3>{{ formatCurrency(stats.netCashFlow) }}</h3>
-            <p>Fluxo de Caixa</p>
+
+        <!-- Seção Movimentos / Fluxo -->
+        <div class="stats-group">
+          <h4>Movimentos / Fluxo</h4>
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-icon success">
+                <i class="fas fa-arrow-up"></i>
+              </div>
+              <div class="stat-content">
+                <h3>{{ formatCurrency(stats.totalIncome) }}</h3>
+                <p>Receitas</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon danger">
+                <i class="fas fa-arrow-down"></i>
+              </div>
+              <div class="stat-content">
+                <h3>{{ formatCurrency(stats.totalExpense) }}</h3>
+                <p>Despesas</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon" [class]="stats.netCashFlow >= 0 ? 'success' : 'danger'">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <div class="stat-content">
+                <h3>{{ formatCurrency(stats.netCashFlow) }}</h3>
+                <p>Fluxo de Caixa</p>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
+
 
       <!-- Resumo Rápido -->
       <div class="quick-summary">
         <div class="summary-section">
           <h3>Contas Vencendo em Breve</h3>
           <div class="summary-list">
-            <div *ngFor="let account of accountsPayable.slice(0, 5)" class="summary-item">
+            <div *ngFor="let account of getUpcomingPayables()" class="summary-item"
+              [class.overdue]="isOverdue(account.dueDate)">
               <span class="item-title">{{ account.description }}</span>
               <span class="item-amount">{{ formatCurrency(account.amount) }}</span>
-              <span class="item-date" [class.overdue]="isOverdue(account.dueDate)">
+              <span class="item-date">
                 {{ formatDate(account.dueDate) }}
               </span>
             </div>
           </div>
+
         </div>
-        
+
         <div class="summary-section">
           <h3>Últimas Movimentações</h3>
           <div class="summary-list">
@@ -190,14 +181,10 @@
       <div class="filters-section">
         <div class="search-box">
           <i class="fas fa-search"></i>
-          <input 
-            type="text" 
-            placeholder="Buscar por descrição ou fornecedor..."
-            [(ngModel)]="searchTerm"
-            class="search-input"
-          >
+          <input type="text" placeholder="Buscar por descrição ou fornecedor..." [(ngModel)]="searchTerm"
+            class="search-input">
         </div>
-        
+
         <div class="filter-controls">
           <select [(ngModel)]="statusFilter" class="filter-select">
             <option value="all">Todos os Status</option>
@@ -206,26 +193,16 @@
             <option value="overdue">Vencido</option>
             <option value="cancelled">Cancelado</option>
           </select>
-          
-          <input 
-            type="date" 
-            [(ngModel)]="startDateFilter"
-            class="filter-date"
-            placeholder="Data Inicial"
-          >
-          
-          <input 
-            type="date" 
-            [(ngModel)]="endDateFilter"
-            class="filter-date"
-            placeholder="Data Final"
-          >
-          
+
+          <input type="date" [(ngModel)]="startDateFilter" class="filter-date" placeholder="Data Inicial">
+
+          <input type="date" [(ngModel)]="endDateFilter" class="filter-date" placeholder="Data Final">
+
           <button class="btn-secondary" (click)="applyFilters()">
             <i class="fas fa-filter"></i>
             Filtrar
           </button>
-          
+
           <button class="btn-secondary" (click)="clearFilters()">
             <i class="fas fa-times"></i>
             Limpar
@@ -264,12 +241,8 @@
                   <button class="btn-icon" (click)="editAccountPayable(account)" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button 
-                    *ngIf="account.status === 'pending'"
-                    class="btn-icon btn-success" 
-                    (click)="payAccountPayable(account)"
-                    title="Marcar como Pago"
-                  >
+                  <button *ngIf="account.status === 'pending'" class="btn-icon btn-success"
+                    (click)="payAccountPayable(account)" title="Marcar como Pago">
                     <i class="fas fa-check"></i>
                   </button>
                 </div>
@@ -286,14 +259,10 @@
       <div class="filters-section">
         <div class="search-box">
           <i class="fas fa-search"></i>
-          <input 
-            type="text" 
-            placeholder="Buscar por descrição ou cliente..."
-            [(ngModel)]="searchTerm"
-            class="search-input"
-          >
+          <input type="text" placeholder="Buscar por descrição ou cliente..." [(ngModel)]="searchTerm"
+            class="search-input">
         </div>
-        
+
         <div class="filter-controls">
           <select [(ngModel)]="statusFilter" class="filter-select">
             <option value="all">Todos os Status</option>
@@ -302,26 +271,16 @@
             <option value="overdue">Vencido</option>
             <option value="cancelled">Cancelado</option>
           </select>
-          
-          <input 
-            type="date" 
-            [(ngModel)]="startDateFilter"
-            class="filter-date"
-            placeholder="Data Inicial"
-          >
-          
-          <input 
-            type="date" 
-            [(ngModel)]="endDateFilter"
-            class="filter-date"
-            placeholder="Data Final"
-          >
-          
+
+          <input type="date" [(ngModel)]="startDateFilter" class="filter-date" placeholder="Data Inicial">
+
+          <input type="date" [(ngModel)]="endDateFilter" class="filter-date" placeholder="Data Final">
+
           <button class="btn-secondary" (click)="applyFilters()">
             <i class="fas fa-filter"></i>
             Filtrar
           </button>
-          
+
           <button class="btn-secondary" (click)="clearFilters()">
             <i class="fas fa-times"></i>
             Limpar
@@ -360,12 +319,8 @@
                   <button class="btn-icon" (click)="editAccountReceivable(account)" title="Editar">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button 
-                    *ngIf="account.status === 'pending'"
-                    class="btn-icon btn-success" 
-                    (click)="receiveAccountReceivable(account)"
-                    title="Marcar como Recebido"
-                  >
+                  <button *ngIf="account.status === 'pending'" class="btn-icon btn-success"
+                    (click)="receiveAccountReceivable(account)" title="Marcar como Recebido">
                     <i class="fas fa-check"></i>
                   </button>
                 </div>
@@ -382,14 +337,9 @@
       <div class="filters-section">
         <div class="search-box">
           <i class="fas fa-search"></i>
-          <input 
-            type="text" 
-            placeholder="Buscar por descrição..."
-            [(ngModel)]="searchTerm"
-            class="search-input"
-          >
+          <input type="text" placeholder="Buscar por descrição..." [(ngModel)]="searchTerm" class="search-input">
         </div>
-        
+
         <div class="filter-controls">
           <select [(ngModel)]="categoryFilter" class="filter-select">
             <option value="all">Todas as Categorias</option>
@@ -397,26 +347,16 @@
               {{ getCategoryText(category) }}
             </option>
           </select>
-          
-          <input 
-            type="date" 
-            [(ngModel)]="startDateFilter"
-            class="filter-date"
-            placeholder="Data Inicial"
-          >
-          
-          <input 
-            type="date" 
-            [(ngModel)]="endDateFilter"
-            class="filter-date"
-            placeholder="Data Final"
-          >
-          
+
+          <input type="date" [(ngModel)]="startDateFilter" class="filter-date" placeholder="Data Inicial">
+
+          <input type="date" [(ngModel)]="endDateFilter" class="filter-date" placeholder="Data Final">
+
           <button class="btn-secondary" (click)="applyFilters()">
             <i class="fas fa-filter"></i>
             Filtrar
           </button>
-          
+
           <button class="btn-secondary" (click)="clearFilters()">
             <i class="fas fa-times"></i>
             Limpar
@@ -475,7 +415,7 @@
             <option value="monthly">Mensal (12 meses)</option>
           </select>
         </div>
-        
+
         <button class="btn-primary" (click)="exportReport()">
           <i class="fas fa-download"></i>
           Exportar Relatório
@@ -505,7 +445,7 @@
               <span>{{ formatCurrency(financialReport.overduePayables) }}</span>
             </div>
           </div>
-          
+
           <div class="report-card">
             <h4>Contas a Receber</h4>
             <div class="report-item">
@@ -525,7 +465,7 @@
               <span>{{ formatCurrency(financialReport.overdueReceivables) }}</span>
             </div>
           </div>
-          
+
           <div class="report-card">
             <h4>Fluxo de Caixa</h4>
             <div class="report-item">
@@ -546,35 +486,12 @@
         </div>
       </div>
 
-      <!-- Relatório de Fluxo de Caixa -->
-      <div *ngIf="cashFlowReport" class="report-section">
-        <h3>Fluxo de Caixa</h3>
-        <div class="cash-flow-summary">
-          <div class="summary-item">
-            <span>Saldo Inicial:</span>
-            <span>{{ formatCurrency(cashFlowReport.openingBalance) }}</span>
-          </div>
-          <div class="summary-item">
-            <span>Total Receitas:</span>
-            <span>{{ formatCurrency(cashFlowReport.totalIncome) }}</span>
-          </div>
-          <div class="summary-item">
-            <span>Total Despesas:</span>
-            <span>{{ formatCurrency(cashFlowReport.totalExpense) }}</span>
-          </div>
-          <div class="summary-item total">
-            <span>Saldo Final:</span>
-            <span [class]="cashFlowReport.closingBalance >= 0 ? 'positive' : 'negative'">
-              {{ formatCurrency(cashFlowReport.closingBalance) }}
-            </span>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
 
   <!-- Formulários Modais -->
-  
+
   <!-- Formulário de Conta -->
   <div *ngIf="showForm && (activeTab === 'payables' || activeTab === 'receivables')" class="modal-overlay">
     <div class="modal-content">
@@ -584,51 +501,35 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="form">
         <div class="form-group">
           <label for="description">Descrição *</label>
-          <input 
-            type="text" 
-            id="description" 
-            formControlName="description" 
-            class="form-input"
-            placeholder="Descrição da conta"
-          >
-          <div *ngIf="accountForm.get('description')?.invalid && accountForm.get('description')?.touched" class="error-message">
+          <input type="text" id="description" formControlName="description" class="form-input"
+            placeholder="Descrição da conta">
+          <div *ngIf="accountForm.get('description')?.invalid && accountForm.get('description')?.touched"
+            class="error-message">
             Descrição é obrigatória
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="amount">Valor *</label>
-          <input 
-            type="number" 
-            id="amount" 
-            formControlName="amount" 
-            class="form-input"
-            step="0.01"
-            min="0.01"
-            placeholder="0,00"
-          >
+          <input type="number" id="amount" formControlName="amount" class="form-input" step="0.01" min="0.01"
+            placeholder="0,00">
           <div *ngIf="accountForm.get('amount')?.invalid && accountForm.get('amount')?.touched" class="error-message">
             Valor deve ser maior que zero
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="dueDate">Data de Vencimento *</label>
-          <input 
-            type="date" 
-            id="dueDate" 
-            formControlName="dueDate" 
-            class="form-input"
-          >
+          <input type="date" id="dueDate" formControlName="dueDate" class="form-input">
           <div *ngIf="accountForm.get('dueDate')?.invalid && accountForm.get('dueDate')?.touched" class="error-message">
             Data de vencimento é obrigatória
           </div>
         </div>
-        
+
         <div class="form-group" *ngIf="activeTab === 'payables'">
           <label for="supplierId">Fornecedor</label>
           <select id="supplierId" formControlName="supplierId" class="form-select">
@@ -638,7 +539,7 @@
             </option>
           </select>
         </div>
-        
+
         <div class="form-group" *ngIf="activeTab === 'receivables'">
           <label for="customerId">Cliente</label>
           <select id="customerId" formControlName="customerId" class="form-select">
@@ -648,18 +549,13 @@
             </option>
           </select>
         </div>
-        
+
         <div class="form-group">
           <label for="notes">Observações</label>
-          <textarea 
-            id="notes" 
-            formControlName="notes" 
-            class="form-textarea"
-            rows="3"
-            placeholder="Observações sobre a conta"
-          ></textarea>
+          <textarea id="notes" formControlName="notes" class="form-textarea" rows="3"
+            placeholder="Observações sobre a conta"></textarea>
         </div>
-        
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" (click)="closeForm()">
             Cancelar
@@ -681,7 +577,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form [formGroup]="movementForm" (ngSubmit)="saveMovement()" class="form">
         <div class="form-row">
           <div class="form-group">
@@ -691,7 +587,7 @@
               <option value="expense">Despesa</option>
             </select>
           </div>
-          
+
           <div class="form-group">
             <label for="category">Categoria *</label>
             <select id="category" formControlName="category" class="form-select">
@@ -702,52 +598,37 @@
             </select>
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="description">Descrição *</label>
-          <input 
-            type="text" 
-            id="description" 
-            formControlName="description" 
-            class="form-input"
-            placeholder="Descrição da movimentação"
-          >
-          <div *ngIf="movementForm.get('description')?.invalid && movementForm.get('description')?.touched" class="error-message">
+          <input type="text" id="description" formControlName="description" class="form-input"
+            placeholder="Descrição da movimentação">
+          <div *ngIf="movementForm.get('description')?.invalid && movementForm.get('description')?.touched"
+            class="error-message">
             Descrição é obrigatória
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="amount">Valor *</label>
-            <input 
-              type="number" 
-              id="amount" 
-              formControlName="amount" 
-              class="form-input"
-              step="0.01"
-              min="0.01"
-              placeholder="0,00"
-            >
-            <div *ngIf="movementForm.get('amount')?.invalid && movementForm.get('amount')?.touched" class="error-message">
+            <input type="number" id="amount" formControlName="amount" class="form-input" step="0.01" min="0.01"
+              placeholder="0,00">
+            <div *ngIf="movementForm.get('amount')?.invalid && movementForm.get('amount')?.touched"
+              class="error-message">
               Valor deve ser maior que zero
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="date">Data *</label>
-            <input 
-              type="date" 
-              id="date" 
-              formControlName="date" 
-              class="form-input"
-            >
+            <input type="date" id="date" formControlName="date" class="form-input">
             <div *ngIf="movementForm.get('date')?.invalid && movementForm.get('date')?.touched" class="error-message">
               Data é obrigatória
             </div>
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="paymentMethod">Método de Pagamento</label>
@@ -758,30 +639,20 @@
               </option>
             </select>
           </div>
-          
+
           <div class="form-group">
             <label for="reference">Referência</label>
-            <input 
-              type="text" 
-              id="reference" 
-              formControlName="reference" 
-              class="form-input"
-              placeholder="Referência da movimentação"
-            >
+            <input type="text" id="reference" formControlName="reference" class="form-input"
+              placeholder="Referência da movimentação">
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="notes">Observações</label>
-          <textarea 
-            id="notes" 
-            formControlName="notes" 
-            class="form-textarea"
-            rows="3"
-            placeholder="Observações sobre a movimentação"
-          ></textarea>
+          <textarea id="notes" formControlName="notes" class="form-textarea" rows="3"
+            placeholder="Observações sobre a movimentação"></textarea>
         </div>
-        
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" (click)="closeForm()">
             Cancelar

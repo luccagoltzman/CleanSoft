@@ -788,3 +788,16 @@
     font-size: 1.5rem;
   }
 }
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background-color: #f5f5f5;
+  margin-bottom: 6px;
+}
+
+.summary-item.overdue {
+  background-color: #ffdada; /* vermelho claro */
+}

@@ -277,35 +277,23 @@ export class FinancialService {
   // Métodos para Relatórios
   getFinancialReport(accountsPayable: AccountPayable[], accountsReceivable: AccountReceivable[], cashMovements: CashMovement[], period: 'daily' | 'weekly' | 'monthly', startDate: any, endDate: any): Observable<FinancialReport> {
 
-    // Ajusta o período
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
 
-    // Filtra contas a pagar
     const payables = accountsPayable.filter(a => {
       const createdAt = new Date(a.createdAt).getTime();
       return createdAt >= startDate.getTime() && createdAt <= endDate.getTime();
     });
 
-    // Filtra contas a receber
     const receivables = accountsReceivable.filter(a => {
       const createdAt = new Date(a.createdAt).getTime();
       return createdAt >= startDate.getTime() && createdAt <= endDate.getTime();
     });
 
-    // Filtra movimentos
     const movements = cashMovements.filter(m => {
       const date = new Date(m.date).getTime();
       return date >= startDate.getTime() && date <= endDate.getTime();
     });
-
-
-
-
-    console.log('Payables:', accountsPayable)
-    console.log('Receivables:', receivables)
-    console.log('Movements:', movements)
-    console.log('Payables:', payables)
 
     const totalPayables = payables.reduce((sum, a) => sum + a.amount, 0);
     const paidPayables = payables.filter(a => a.status === 'paid').reduce((sum, a) => sum + a.amount, 0);
