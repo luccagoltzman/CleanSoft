@@ -1,67 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, BehaviorSubject } from 'rxjs';
-import { Service, ServiceCategory, AdditionalService, ServiceSearchParams, ServiceWithTotal } from '../models';
+import { Service, ServiceCategory, AdditionalService, ServiceSearchParams } from '../models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ServiceService {
   private services: Service[] = [
-    {
-      id: 1,
-      name: 'Lavagem Simples',
-      description: 'Lavagem externa do veículo com água e sabão',
-      category: ServiceCategory.SIMPLE,
-      basePrice: 25.00,
-      isActive: true,
-      services_with_addons: [],
-      createdAt: new Date('2023-01-15'),
-      updatedAt: new Date('2023-01-15')
-    },
-    {
-      id: 2,
-      name: 'Lavagem Detalhada',
-      description: 'Lavagem completa interna e externa com aspirador',
-      category: ServiceCategory.DETAILED,
-      basePrice: 45.00,
-      isActive: true,
-      services_with_addons: [],
-      createdAt: new Date('2023-01-15'),
-      updatedAt: new Date('2023-01-15')
-    },
-    {
-      id: 3,
-      name: 'Lavagem Técnica',
-      description: 'Lavagem com produtos especiais e cera',
-      category: ServiceCategory.TECHNICAL,
-      basePrice: 80.00,
-      isActive: true,
-      services_with_addons: [],
-      createdAt: new Date('2023-01-15'),
-      updatedAt: new Date('2023-01-15')
-    },
-    {
-      id: 4,
-      name: 'Polimento',
-      description: 'Polimento da pintura do veículo',
-      category: ServiceCategory.TECHNICAL,
-      basePrice: 120.00,
-      isActive: true,
-      services_with_addons: [],
-      createdAt: new Date('2023-01-15'),
-      updatedAt: new Date('2023-01-15')
-    },
-    {
-      id: 5,
-      name: 'Higienização de Ar Condicionado',
-      description: 'Limpeza e desinfecção do sistema de ar condicionado',
-      category: ServiceCategory.TECHNICAL,
-      basePrice: 60.00,
-      isActive: true,
-      services_with_addons: [],
-      createdAt: new Date('2023-01-15'),
-      updatedAt: new Date('2023-01-15')
-    }
+ 
   ];
 
   private additionalServices: AdditionalService[] = [

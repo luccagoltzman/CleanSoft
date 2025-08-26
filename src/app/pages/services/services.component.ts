@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Service, ServiceCategory, AdditionalService, ServiceSearchParams } from '../../models';
+import { Service, ServiceCategory, AdditionalService, ServiceSearchParams, Customer } from '../../models';
 import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
@@ -46,6 +46,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
   availableCategories: ServiceCategory[] = [];
   additionalServices: AdditionalService[] = [];
   selectedAdditionalServices: number[] = [];
+  customers: Customer[] = [];
 
   private destroy$ = new Subject<void>();
 
@@ -62,6 +63,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
     this.serviceForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
+      customerId: ['', Validators.required],
       category: ['', Validators.required],
       basePrice: ['', [Validators.required, Validators.min(0)]],
     });
@@ -78,9 +80,35 @@ export class ServicesComponent implements OnInit, OnDestroy {
     this.loadStats();
     this.loadAvailableCategories();
     this.loadAdditionalServices();
-
+    this.loadCustomers();
 
   }
+
+  getCustomerNameById(customerId: number): string {
+    const customer = this.customers.find(c => c.id == customerId);
+    return customer ? customer.name : 'Cliente não encontrado';
+  }
+
+  loadCustomers() {
+    this.api.getAll('clients')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((customers: any[]) => {
+        this.customers = customers.map(customer => ({
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          document: customer.document,
+          documentType: customer.documentType,
+          observations: customer.observations,
+          isActive: customer.isActive,
+          createdAt: customer.createdAt,
+          updatedAt: customer.updatedAt,
+          vehicles: []
+        }));
+      });
+  }
+
 
   ngOnDestroy() {
     this.destroy$.next();
@@ -306,14 +334,14 @@ export class ServicesComponent implements OnInit, OnDestroy {
   }
 
   deactivateService(service: Service) {
-    this.api.update('service',service.id,{isActive: false}).subscribe(() => {
+    this.api.update('service', service.id, { isActive: false }).subscribe(() => {
       this.loadServices();
       this.loadStats();
     });
   }
 
   activateService(service: Service) {
-    this.api.update('service',service.id,{isActive: true}).subscribe(() => {
+    this.api.update('service', service.id, { isActive: true }).subscribe(() => {
       this.loadServices();
       this.loadStats();
     });

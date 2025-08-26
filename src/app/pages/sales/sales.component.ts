@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { SaleService } from '../../services/sale.service';
 import { Sale, SaleItem, PaymentMethod, PaymentStatus, Customer, Vehicle, Product, Service } from '../../models';
-import { Subject, takeUntil, combineLatest, forkJoin } from 'rxjs';
+import { Subject, takeUntil, combineLatest, forkJoin, throwError, switchMap } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-sales',
@@ -65,7 +66,8 @@ export class SalesComponent implements OnInit, OnDestroy {
     private saleService: SaleService,
     private api: ApiService,
     private fb: FormBuilder,
-    private paginationService: PaginationService
+    private paginationService: PaginationService,
+    private toast: ToastrService
   ) {
     this.saleForm = this.fb.group({
       customerId: ['', Validators.required],
@@ -350,58 +352,127 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   saveSale() {
+    if (!this.saleForm.valid || this.items.length === 0) return;
 
-    if (this.saleForm.valid && this.items.length > 0) {
-      const formValue = this.saleForm.value;
+    const formValue = this.saleForm.value;
 
-      const saleData = {
-        customerId: formValue.customerId,
-        vehicleId: formValue.vehicleId,
-        total: this.calculateSaleTotal(),
-        discount: formValue.discount || 0,
-        paymentMethod: formValue.paymentMethod,
-        paymentStatus: formValue.paymentStatus || 'pending',
-        notes: formValue.notes || '',
-        createdAt: new Date(),
-      };
+    const insufficientStock = this.items.value.some((item: any) => {
+      const product = this.products.find((p: any) => p.id == item.productId);
+      return !product || product.currentStock < item.quantity;
+    });
 
-      const saveItems = (saleId: number) => {
-        const saleItemsData = this.items.value.map((item: any) => ({
-          saleId: saleId,
+    if (insufficientStock) {
+      this.toast.error('Estoque insuficiente para um ou mais produtos.');
+      return;
+    }
+
+    const saleData = {
+      customerId: formValue.customerId,
+      vehicleId: formValue.vehicleId,
+      total: this.calculateSaleTotal(),
+      discount: formValue.discount || 0,
+      paymentMethod: formValue.paymentMethod,
+      paymentStatus: formValue.paymentStatus || 'pending',
+      notes: formValue.notes || '',
+      createdAt: new Date(),
+    };
+
+    const processItems = (saleId: number) => {
+      const requests = this.items.value.map((item: any) => {
+        const itemData = {
+          saleId,
           productId: item.type === 'product' ? item.productId : undefined,
           serviceId: item.type === 'service' ? item.serviceId : undefined,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           discount: item.discount || 0,
           notes: item.notes || ''
-        }));
+        };
 
-        return forkJoin(
-          saleItemsData.map((itemData: any) => this.api.create('sale_items', itemData))
-        );
-      };
+        console.log('itemData', itemData);
 
-      if (this.isCreating) {
-        this.api.create('sales', saleData).subscribe((sale: any) => {
-          saveItems(sale[0].id).subscribe(() => {
-            this.closeForm();
-            this.loadSales();
-            this.loadStats();
-          });
-        });
-      } else if (this.isEditing && this.selectedSale) {
-        this.api.update('sales', this.selectedSale.id, saleData).subscribe(() => {
-          this.api.deleteByColumn('sale_items', 'saleId', this.selectedSale!.id).subscribe(() => {
-            saveItems(this.selectedSale!.id).subscribe(() => {
+        if (itemData.productId) {
+          const product = this.products.find((p: any) => p.id == itemData.productId);
+          if (!product) return throwError(() => new Error('Produto não encontrado'));
+          const newStock = product.currentStock - itemData.quantity;
+
+          return this.api.create('sale_items', itemData).pipe(
+            switchMap(() => this.api.update('products', itemData.productId, { currentStock: newStock }))
+          );
+        }
+
+        return this.api.create('sale_items', itemData);
+      });
+
+      return forkJoin(requests);
+    };
+
+    this.toast.info('Salvando venda...', '', { disableTimeOut: true, toastClass: 'ngx-toastr loading-toast' });
+
+    if (this.isCreating) {
+      this.api.create('sales', saleData).subscribe({
+        next: (sale: any) => {
+          const saleId = sale?.[0]?.id;
+          if (!saleId) {
+            this.toast.clear();
+            this.toast.error('Erro ao criar a venda.');
+            return;
+          }
+
+          processItems(saleId).subscribe({
+            next: () => {
+              this.toast.clear();
+              this.toast.success('Venda criada com sucesso!');
               this.closeForm();
               this.loadSales();
               this.loadStats();
-            });
+            },
+            error: () => {
+              this.toast.clear();
+              this.toast.error('Erro ao salvar os itens da venda.');
+              this.api.delete('sales', saleId).subscribe();
+            }
           });
-        });
-      }
+        },
+        error: () => {
+          this.toast.clear();
+          this.toast.error('Erro ao criar a venda.');
+        }
+      });
+    } else if (this.isEditing && this.selectedSale) {
+      const saleId = this.selectedSale.id;
+      this.api.update('sales', saleId, saleData).subscribe({
+        next: () => {
+          this.api.deleteByColumn('sale_items', 'saleId', saleId).subscribe({
+            next: () => {
+              processItems(saleId).subscribe({
+                next: () => {
+                  this.toast.clear();
+                  this.toast.success('Venda atualizada com sucesso!');
+                  this.closeForm();
+                  this.loadSales();
+                  this.loadStats();
+                },
+                error: () => {
+                  this.toast.clear();
+                  this.toast.error('Erro ao salvar os itens da venda.');
+                }
+              });
+            },
+            error: () => {
+              this.toast.clear();
+              this.toast.error('Erro ao deletar itens antigos da venda.');
+            }
+          });
+        },
+        error: () => {
+          this.toast.clear();
+          this.toast.error('Erro ao atualizar a venda.');
+        }
+      });
     }
   }
+
 
   closeForm() {
     this.showForm = false;

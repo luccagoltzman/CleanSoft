@@ -60,32 +60,19 @@
   <div class="filters-section">
     <div class="search-box">
       <i class="fas fa-search"></i>
-      <input 
-        type="text" 
-        placeholder="Buscar por nome ou descrição..."
-        [(ngModel)]="searchTerm"
-        (input)="onSearchChange()"
-        class="search-input"
-      >
+      <input type="text" placeholder="Buscar por nome ou descrição..." [(ngModel)]="searchTerm"
+        (input)="onSearchChange()" class="search-input">
     </div>
-    
+
     <div class="filter-controls">
-      <select 
-        [(ngModel)]="categoryFilter" 
-        (change)="onCategoryFilterChange()"
-        class="filter-select"
-      >
+      <select [(ngModel)]="categoryFilter" (change)="onCategoryFilterChange()" class="filter-select">
         <option value="">Todas as Categorias</option>
         <option *ngFor="let category of availableCategories" [value]="category">
           {{ getCategoryText(category) }}
         </option>
       </select>
-      
-      <select 
-        [(ngModel)]="statusFilter" 
-        (change)="onStatusFilterChange()"
-        class="filter-select"
-      >
+
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
         <option value="all">Todos os Status</option>
         <option value="active">Ativos</option>
         <option value="inactive">Inativos</option>
@@ -99,7 +86,7 @@
       <thead>
         <tr>
           <th>Nome</th>
-          <th>Descrição</th>
+          <th>Cliente</th>
           <th>Categoria</th>
           <th>Preço Base</th>
           <th>Preço Total</th>
@@ -116,7 +103,7 @@
             </div>
           </td>
           <td>
-            <span class="description">{{ service.description }}</span>
+            <span>{{ getCustomerNameById(service.customerId) }}</span>
           </td>
           <td>
             <span class="category-badge" [class]="getCategoryBadgeClass(service.category)">
@@ -145,20 +132,12 @@
               <button class="btn-icon" (click)="editService(service)" title="Editar">
                 <i class="fas fa-edit"></i>
               </button>
-              <button 
-                *ngIf="service.isActive"
-                class="btn-icon btn-warning" 
-                (click)="deactivateService(service)"
-                title="Desativar"
-              >
+              <button *ngIf="service.isActive" class="btn-icon btn-warning" (click)="deactivateService(service)"
+                title="Desativar">
                 <i class="fas fa-times"></i>
               </button>
-              <button 
-                *ngIf="!service.isActive"
-                class="btn-icon btn-success" 
-                (click)="activateService(service)"
-                title="Ativar"
-              >
+              <button *ngIf="!service.isActive" class="btn-icon btn-success" (click)="activateService(service)"
+                title="Ativar">
                 <i class="fas fa-check"></i>
               </button>
             </div>
@@ -166,17 +145,14 @@
         </tr>
       </tbody>
     </table>
-    
+
     <div *ngIf="filteredServices.length === 0" class="no-results">
       <i class="fas fa-search"></i>
       <p>Nenhum serviço encontrado com os filtros aplicados.</p>
     </div>
 
     <!-- Paginação -->
-    <app-pagination
-      [currentPage]="currentPage"
-      [pageSize]="pageSize"
-      [totalItems]="filteredServices.length"
+    <app-pagination [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="filteredServices.length"
       (pageChange)="onPageChange($event)">
     </app-pagination>
   </div>
@@ -190,23 +166,33 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form [formGroup]="serviceForm" (ngSubmit)="saveService()" class="service-form">
         <div class="form-row">
           <div class="form-group">
             <label for="name">Nome *</label>
-            <input 
-              type="text" 
-              id="name" 
-              formControlName="name" 
-              placeholder="Nome do serviço"
-              class="form-input"
-            >
+            <input type="text" id="name" formControlName="name" placeholder="Nome do serviço" class="form-input">
             <div *ngIf="serviceForm.get('name')?.invalid && serviceForm.get('name')?.touched" class="error-message">
               Nome é obrigatório e deve ter pelo menos 3 caracteres
             </div>
           </div>
-          
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="customerId">Cliente *</label>
+              <select id="customerId" formControlName="customerId" class="form-select">
+                <option value="">Selecione um cliente</option>
+                <option *ngFor="let customer of customers" [value]="customer.id">
+                  {{ customer.name }} - {{ customer.phone }}
+                </option>
+              </select>
+              <div *ngIf="serviceForm.get('customerId')?.invalid && serviceForm.get('customerId')?.touched"
+                class="error-message">
+                Cliente é obrigatório
+              </div>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="category">Categoria *</label>
             <select id="category" formControlName="category" class="form-select">
@@ -215,60 +201,44 @@
                 {{ getCategoryText(category) }}
               </option>
             </select>
-            <div *ngIf="serviceForm.get('category')?.invalid && serviceForm.get('category')?.touched" class="error-message">
+            <div *ngIf="serviceForm.get('category')?.invalid && serviceForm.get('category')?.touched"
+              class="error-message">
               Categoria é obrigatória
             </div>
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="description">Descrição *</label>
-          <textarea 
-            id="description" 
-            formControlName="description" 
-            placeholder="Descrição detalhada do serviço"
-            class="form-textarea"
-            rows="3"
-          ></textarea>
-          <div *ngIf="serviceForm.get('description')?.invalid && serviceForm.get('description')?.touched" class="error-message">
+          <textarea id="description" formControlName="description" placeholder="Descrição detalhada do serviço"
+            class="form-textarea" rows="3"></textarea>
+          <div *ngIf="serviceForm.get('description')?.invalid && serviceForm.get('description')?.touched"
+            class="error-message">
             Descrição é obrigatória e deve ter pelo menos 10 caracteres
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="basePrice">Preço Base *</label>
-            <input 
-              type="number" 
-              id="basePrice" 
-              formControlName="basePrice" 
-              placeholder="0.00"
-              class="form-input"
-              step="0.01"
-              min="0"
-            >
-            <div *ngIf="serviceForm.get('basePrice')?.invalid && serviceForm.get('basePrice')?.touched" class="error-message">
+            <input type="number" id="basePrice" formControlName="basePrice" placeholder="0.00" class="form-input"
+              step="0.01" min="0">
+            <div *ngIf="serviceForm.get('basePrice')?.invalid && serviceForm.get('basePrice')?.touched"
+              class="error-message">
               Preço base é obrigatório e deve ser maior que zero
             </div>
           </div>
         </div>
-        
+
         <div class="form-group">
           <label>Serviços Adicionais</label>
           <div class="additional-services-grid">
-            <div 
-              *ngFor="let additional of additionalServices" 
-              class="additional-service-item"
+            <div *ngFor="let additional of additionalServices" class="additional-service-item"
               [class.selected]="isAdditionalServiceSelected(additional.id)"
-              (click)="toggleAdditionalService(additional.id)"
-            >
+              (click)="toggleAdditionalService(additional.id)">
               <div class="additional-service-header">
-                <input 
-                  type="checkbox" 
-                  [checked]="isAdditionalServiceSelected(additional.id)"
-                  (change)="toggleAdditionalService(additional.id)"
-                  class="additional-checkbox"
-                >
+                <input type="checkbox" [checked]="isAdditionalServiceSelected(additional.id)"
+                  (change)="toggleAdditionalService(additional.id)" class="additional-checkbox">
                 <span class="additional-name">{{ additional.name }}</span>
                 <span class="additional-price">+{{ formatCurrency(additional.additionalPrice) }}</span>
               </div>
@@ -276,7 +246,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" (click)="closeForm()">
             Cancelar
@@ -298,52 +268,40 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form [formGroup]="additionalServiceForm" (ngSubmit)="saveAdditionalService()" class="additional-service-form">
         <div class="form-group">
           <label for="additionalName">Nome *</label>
-          <input 
-            type="text" 
-            id="additionalName" 
-            formControlName="name" 
-            placeholder="Nome do serviço adicional"
-            class="form-input"
-          >
-          <div *ngIf="additionalServiceForm.get('name')?.invalid && additionalServiceForm.get('name')?.touched" class="error-message">
+          <input type="text" id="additionalName" formControlName="name" placeholder="Nome do serviço adicional"
+            class="form-input">
+          <div *ngIf="additionalServiceForm.get('name')?.invalid && additionalServiceForm.get('name')?.touched"
+            class="error-message">
             Nome é obrigatório e deve ter pelo menos 3 caracteres
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="additionalDescription">Descrição *</label>
-          <textarea 
-            id="additionalDescription" 
-            formControlName="description" 
-            placeholder="Descrição do serviço adicional"
-            class="form-textarea"
-            rows="3"
-          ></textarea>
-          <div *ngIf="additionalServiceForm.get('description')?.invalid && additionalServiceForm.get('description')?.touched" class="error-message">
+          <textarea id="additionalDescription" formControlName="description"
+            placeholder="Descrição do serviço adicional" class="form-textarea" rows="3"></textarea>
+          <div
+            *ngIf="additionalServiceForm.get('description')?.invalid && additionalServiceForm.get('description')?.touched"
+            class="error-message">
             Descrição é obrigatória e deve ter pelo menos 10 caracteres
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="additionalPrice">Preço Adicional *</label>
-          <input 
-            type="number" 
-            id="additionalPrice" 
-            formControlName="additionalPrice" 
-            placeholder="0.00"
-            class="form-input"
-            step="0.01"
-            min="0"
-          >
-          <div *ngIf="additionalServiceForm.get('additionalPrice')?.invalid && additionalServiceForm.get('additionalPrice')?.touched" class="error-message">
+          <input type="number" id="additionalPrice" formControlName="additionalPrice" placeholder="0.00"
+            class="form-input" step="0.01" min="0">
+          <div
+            *ngIf="additionalServiceForm.get('additionalPrice')?.invalid && additionalServiceForm.get('additionalPrice')?.touched"
+            class="error-message">
             Preço adicional é obrigatório e deve ser maior que zero
           </div>
         </div>
-        
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" (click)="closeAdditionalServiceForm()">
             Cancelar
@@ -365,15 +323,15 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <div class="service-details">
         <div class="detail-row">
           <label>Nome:</label>
           <span>{{ selectedService.name }}</span>
         </div>
         <div class="detail-row">
-          <label>Descrição:</label>
-          <span>{{ selectedService.description }}</span>
+          <label>Cliente:</label>
+          <span>{{ getCustomerNameById(selectedService.customerId) }}</span>
         </div>
         <div class="detail-row">
           <label>Categoria:</label>
@@ -408,7 +366,7 @@
           <span>{{ selectedService.updatedAt | date:'dd/MM/yyyy' }}</span>
         </div>
       </div>
-      
+
       <div class="modal-actions">
         <button class="btn-secondary" (click)="selectedService = null">
           Fechar
@@ -416,18 +374,10 @@
         <button class="btn-primary" (click)="editService(selectedService)">
           Editar
         </button>
-        <button 
-          *ngIf="selectedService.isActive"
-          class="btn-warning" 
-          (click)="deactivateService(selectedService)"
-        >
+        <button *ngIf="selectedService.isActive" class="btn-warning" (click)="deactivateService(selectedService)">
           Desativar
         </button>
-        <button 
-          *ngIf="!selectedService.isActive"
-          class="btn-success" 
-          (click)="activateService(selectedService)"
-        >
+        <button *ngIf="!selectedService.isActive" class="btn-success" (click)="activateService(selectedService)">
           Ativar
         </button>
       </div>

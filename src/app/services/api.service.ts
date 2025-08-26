@@ -26,6 +26,7 @@ export class ApiService {
     let url = `${this.baseUrl}/${table}`;
 
     const query = new URLSearchParams();
+    query.set('order', `id.desc`);
 
     // adiciona params normais
     if (params) {
@@ -43,6 +44,7 @@ export class ApiService {
 
     const queryString = query.toString();
     if (queryString) url += `?${queryString}`;
+
 
     return this.http.get(url, { headers: this.getHeaders() });
   }

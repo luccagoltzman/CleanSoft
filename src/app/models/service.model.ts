@@ -7,6 +7,7 @@ export interface Service {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  customerId: number;
   services_with_addons?: any[];
 }
 
