@@ -2,18 +2,17 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FinancialService } from '../../services/financial.service';
-import { ProductService } from '../../services/product.service';
-import { 
-  AccountPayable, 
-  AccountReceivable, 
-  CashMovement, 
-  CashMovementCategory, 
-  PaymentMethod, 
-  FinancialReport, 
+import {
+  AccountPayable,
+  AccountReceivable,
+  CashMovement,
+  CashMovementCategory,
+  PaymentMethod,
+  FinancialReport,
   CashFlowReport,
-  FinancialSearchParams 
+  FinancialSearchParams
 } from '../../models';
-import { Subject, takeUntil } from 'rxjs';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 
 @Component({
@@ -79,7 +78,6 @@ export class FinancialComponent implements OnInit, OnDestroy {
   constructor(
     private financialService: FinancialService,
     private api: ApiService,
-    private productService: ProductService,
     private fb: FormBuilder
   ) {
     this.accountForm = this.fb.group({
@@ -108,7 +106,6 @@ export class FinancialComponent implements OnInit, OnDestroy {
     this.loadData();
     this.loadCustomers();
     this.loadSuppliers();
-    this.loadReports();
   }
 
   ngOnDestroy() {
@@ -117,27 +114,22 @@ export class FinancialComponent implements OnInit, OnDestroy {
   }
 
   loadData() {
-    this.financialService.getAccountsPayable()
+    forkJoin({
+      payables: this.api.getAll('accounts_payable'),
+      receivables: this.api.getAll('accounts_receivable'),
+      movements: this.api.getAll('cash_movements')
+    })
       .pipe(takeUntil(this.destroy$))
-      .subscribe(payables => {
-        this.accountsPayable = payables;
-        this.updateStats();
-      });
-
-    this.financialService.getAccountsReceivable()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(receivables => {
-        this.accountsReceivable = receivables;
-        this.updateStats();
-      });
-
-    this.financialService.getCashMovements()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(movements => {
+      .subscribe(({ payables, receivables, movements }) => {
+        this.accountsPayable = payables.filter((item: any) => item.type === 'payables');
+        this.accountsReceivable = receivables.filter((item: any) => item.type === 'receivables');
         this.cashMovements = movements;
+
         this.updateStats();
+        this.loadReports();
       });
   }
+
 
   loadCustomers() {
     this.api.getAll('clients')
@@ -148,7 +140,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
   }
 
   loadSuppliers() {
-    this.productService.getSuppliers()
+    this.api.getAll('suppliers')
       .pipe(takeUntil(this.destroy$))
       .subscribe(suppliers => {
         this.suppliers = suppliers;
@@ -158,7 +150,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
   loadReports() {
     const endDate = new Date();
     const startDate = new Date();
-    
+
     if (this.reportPeriod === 'daily') {
       startDate.setDate(endDate.getDate() - 7);
     } else if (this.reportPeriod === 'weekly') {
@@ -167,17 +159,27 @@ export class FinancialComponent implements OnInit, OnDestroy {
       startDate.setMonth(endDate.getMonth() - 12);
     }
 
-    this.financialService.getFinancialReport(this.reportPeriod, startDate, endDate)
+    this.financialService.getFinancialReport(this.accountsPayable, this.accountsReceivable, this.cashMovements, this.reportPeriod, startDate, endDate)
       .pipe(takeUntil(this.destroy$))
       .subscribe(report => {
         this.financialReport = report;
       });
 
-    this.financialService.getCashFlowReport(this.reportPeriod, startDate, endDate)
+    this.financialService.getCashFlowReport(this.accountsPayable, this.accountsReceivable, this.cashMovements, this.reportPeriod, startDate, endDate)
       .pipe(takeUntil(this.destroy$))
       .subscribe(report => {
         this.cashFlowReport = report;
       });
+
+
+    console.log(this.financialReport);
+  }
+
+  formatDate(date: any): string {
+    if (!date) return '-';
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) return '-';
+    return parsedDate.toLocaleDateString('pt-BR');
   }
 
   updateStats() {
@@ -229,7 +231,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
     this.accountForm.patchValue({
       description: account.description,
       amount: account.amount,
-      dueDate: this.formatDateForInput(account.dueDate),
+      dueDate: (account.dueDate),
       notes: account.notes,
       supplierId: account.supplierId
     });
@@ -239,10 +241,11 @@ export class FinancialComponent implements OnInit, OnDestroy {
   payAccountPayable(account: AccountPayable) {
     if (account.status !== 'pending') return;
 
-    const paymentDate = new Date();
-    const paymentMethod = PaymentMethod.CASH; // Padrão
-
-    this.financialService.payAccountPayable(account.id, paymentDate, paymentMethod)
+    const body = {
+      paymentDate: new Date(),
+      status: 'paid',
+    }
+    this.api.update('accounts_payable', account.id, body)
       .subscribe(success => {
         if (success) {
           this.loadData();
@@ -269,7 +272,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
     this.accountForm.patchValue({
       description: account.description,
       amount: account.amount,
-      dueDate: this.formatDateForInput(account.dueDate),
+      dueDate: (account.dueDate),
       notes: account.notes,
       customerId: account.customerId,
       saleId: account.saleId
@@ -279,17 +282,18 @@ export class FinancialComponent implements OnInit, OnDestroy {
 
   receiveAccountReceivable(account: AccountReceivable) {
     if (account.status !== 'pending') return;
-
-    const paymentDate = new Date();
-    const paymentMethod = PaymentMethod.CASH; // Padrão
-
-    this.financialService.receiveAccountReceivable(account.id, paymentDate, paymentMethod)
+    const body = {
+      paymentDate: new Date(),
+      status: 'paid',
+    }
+    this.api.update('accounts_receivable', account.id, body)
       .subscribe(success => {
         if (success) {
           this.loadData();
           this.loadReports();
         }
       });
+
   }
 
   // Movimentações de Caixa
@@ -313,7 +317,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
       category: movement.category,
       description: movement.description,
       amount: movement.amount,
-      date: this.formatDateForInput(movement.date),
+      date: (movement.date),
       paymentMethod: movement.paymentMethod,
       reference: movement.reference,
       notes: movement.notes
@@ -325,7 +329,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
   saveAccount() {
     if (this.accountForm.valid) {
       const formValue = this.accountForm.value;
-      
+
       if (this.activeTab === 'payables') {
         const accountData = {
           supplierId: formValue.supplierId,
@@ -334,17 +338,18 @@ export class FinancialComponent implements OnInit, OnDestroy {
           dueDate: new Date(formValue.dueDate),
           status: 'pending' as const,
           notes: formValue.notes,
-          createdBy: 1
+          createdBy: 1,
+          type: 'payables',
         };
 
         if (this.isCreating) {
-          this.financialService.createAccountPayable(accountData).subscribe(() => {
+          this.api.create('accounts_payable', accountData).subscribe(() => {
             this.closeForm();
             this.loadData();
             this.loadReports();
           });
         } else if (this.isEditing && this.selectedAccount) {
-          this.financialService.updateAccountPayable(this.selectedAccount.id, accountData).subscribe(() => {
+          this.api.update('accounts_payable', this.selectedAccount.id, accountData).subscribe(() => {
             this.closeForm();
             this.loadData();
             this.loadReports();
@@ -353,23 +358,23 @@ export class FinancialComponent implements OnInit, OnDestroy {
       } else if (this.activeTab === 'receivables') {
         const accountData = {
           customerId: formValue.customerId,
-          saleId: formValue.saleId || undefined,
           description: formValue.description,
           amount: formValue.amount,
           dueDate: new Date(formValue.dueDate),
           status: 'pending' as const,
           notes: formValue.notes,
-          createdBy: 1
+          createdBy: 1,
+          type: 'receivables',
         };
 
         if (this.isCreating) {
-          this.financialService.createAccountReceivable(accountData).subscribe(() => {
+          this.api.create('accounts_receivable', accountData).subscribe(() => {
             this.closeForm();
             this.loadData();
             this.loadReports();
           });
         } else if (this.isEditing && this.selectedAccount) {
-          this.financialService.updateAccountReceivable(this.selectedAccount.id, accountData).subscribe(() => {
+          this.api.update('accounts_receivable', this.selectedAccount.id, accountData).subscribe(() => {
             this.closeForm();
             this.loadData();
             this.loadReports();
@@ -382,7 +387,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
   saveMovement() {
     if (this.movementForm.valid) {
       const formValue = this.movementForm.value;
-      
+
       const movementData = {
         type: formValue.type,
         category: formValue.category,
@@ -396,7 +401,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
       };
 
       if (this.isCreating) {
-        this.financialService.createCashMovement(movementData).subscribe(() => {
+        this.api.create('cash_movements', movementData).subscribe(() => {
           this.closeForm();
           this.loadData();
           this.loadReports();
@@ -421,9 +426,9 @@ export class FinancialComponent implements OnInit, OnDestroy {
   // Filtros
   applyFilters() {
     const params: FinancialSearchParams = {
-      type: this.activeTab === 'payables' ? 'payable' : 
-            this.activeTab === 'receivables' ? 'receivable' : 
-            this.activeTab === 'movements' ? 'movement' : undefined,
+      type: this.activeTab === 'payables' ? 'payable' :
+        this.activeTab === 'receivables' ? 'receivable' :
+          this.activeTab === 'movements' ? 'movement' : undefined,
       status: this.statusFilter !== 'all' ? this.statusFilter as any : undefined,
       category: this.categoryFilter !== 'all' ? this.categoryFilter as any : undefined,
       startDate: this.startDateFilter ? new Date(this.startDateFilter) : undefined,
@@ -515,13 +520,6 @@ export class FinancialComponent implements OnInit, OnDestroy {
     }).format(value);
   }
 
-  formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('pt-BR').format(date);
-  }
-
-  formatDateForInput(date: Date): string {
-    return date.toISOString().split('T')[0];
-  }
 
   isOverdue(date: Date): boolean {
     return date < new Date();

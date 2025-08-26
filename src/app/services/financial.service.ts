@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, BehaviorSubject } from 'rxjs';
-import { 
-  AccountPayable, 
-  AccountReceivable, 
-  CashMovement, 
-  CashMovementCategory, 
-  PaymentMethod, 
-  CashFlow, 
-  CashFlowReport, 
-  FinancialReport, 
-  FinancialSearchParams 
+import {
+  AccountPayable,
+  AccountReceivable,
+  CashMovement,
+  CashMovementCategory,
+  PaymentMethod,
+  CashFlow,
+  CashFlowReport,
+  FinancialReport,
+  FinancialSearchParams
 } from '../models';
 
 @Injectable({
@@ -108,7 +108,7 @@ export class FinancialService {
   private accountsReceivableSubject = new BehaviorSubject<AccountReceivable[]>(this.accountsReceivable);
   private cashMovementsSubject = new BehaviorSubject<CashMovement[]>(this.cashMovements);
 
-  constructor() {}
+  constructor() { }
 
   // Métodos para Contas a Pagar
   getAccountsPayable(): Observable<AccountPayable[]> {
@@ -275,28 +275,49 @@ export class FinancialService {
   }
 
   // Métodos para Relatórios
-  getFinancialReport(period: 'daily' | 'weekly' | 'monthly', startDate: Date, endDate: Date): Observable<FinancialReport> {
-    const payables = this.accountsPayable.filter(a => 
-      a.createdAt >= startDate && a.createdAt <= endDate
-    );
-    const receivables = this.accountsReceivable.filter(a => 
-      a.createdAt >= startDate && a.createdAt <= endDate
-    );
-    const movements = this.cashMovements.filter(m => 
-      m.date >= startDate && m.date <= endDate
-    );
+  getFinancialReport(accountsPayable: AccountPayable[], accountsReceivable: AccountReceivable[], cashMovements: CashMovement[], period: 'daily' | 'weekly' | 'monthly', startDate: any, endDate: any): Observable<FinancialReport> {
+
+    // Ajusta o período
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    // Filtra contas a pagar
+    const payables = accountsPayable.filter(a => {
+      const createdAt = new Date(a.createdAt).getTime();
+      return createdAt >= startDate.getTime() && createdAt <= endDate.getTime();
+    });
+
+    // Filtra contas a receber
+    const receivables = accountsReceivable.filter(a => {
+      const createdAt = new Date(a.createdAt).getTime();
+      return createdAt >= startDate.getTime() && createdAt <= endDate.getTime();
+    });
+
+    // Filtra movimentos
+    const movements = cashMovements.filter(m => {
+      const date = new Date(m.date).getTime();
+      return date >= startDate.getTime() && date <= endDate.getTime();
+    });
+
+
+
+
+    console.log('Payables:', accountsPayable)
+    console.log('Receivables:', receivables)
+    console.log('Movements:', movements)
+    console.log('Payables:', payables)
 
     const totalPayables = payables.reduce((sum, a) => sum + a.amount, 0);
     const paidPayables = payables.filter(a => a.status === 'paid').reduce((sum, a) => sum + a.amount, 0);
     const pendingPayables = payables.filter(a => a.status === 'pending').reduce((sum, a) => sum + a.amount, 0);
-    const overduePayables = payables.filter(a => 
+    const overduePayables = payables.filter(a =>
       a.status === 'pending' && a.dueDate < new Date()
     ).reduce((sum, a) => sum + a.amount, 0);
 
     const totalReceivables = receivables.reduce((sum, a) => sum + a.amount, 0);
     const paidReceivables = receivables.filter(a => a.status === 'paid').reduce((sum, a) => sum + a.amount, 0);
     const pendingReceivables = receivables.filter(a => a.status === 'pending').reduce((sum, a) => sum + a.amount, 0);
-    const overdueReceivables = receivables.filter(a => 
+    const overdueReceivables = receivables.filter(a =>
       a.status === 'pending' && a.dueDate < new Date()
     ).reduce((sum, a) => sum + a.amount, 0);
 
@@ -334,8 +355,8 @@ export class FinancialService {
     });
   }
 
-  getCashFlowReport(period: 'daily' | 'weekly' | 'monthly', startDate: Date, endDate: Date): Observable<CashFlowReport> {
-    const movements = this.cashMovements.filter(m => 
+  getCashFlowReport(accountsPayable: AccountPayable[], accountsReceivable: AccountReceivable[], cashMovements: CashMovement[], period: 'daily' | 'weekly' | 'monthly', startDate: Date, endDate: Date): Observable<CashFlowReport> {
+    const movements = cashMovements.filter(m =>
       m.date >= startDate && m.date <= endDate
     );
 
@@ -361,10 +382,10 @@ export class FinancialService {
       const dayMovements = movementsByDate.get(date)!;
       const dayIncome = dayMovements.filter(m => m.type === 'income').reduce((sum, m) => sum + m.amount, 0);
       const dayExpense = dayMovements.filter(m => m.type === 'expense').reduce((sum, m) => sum + m.amount, 0);
-      
+
       const openingBalance = currentBalance;
       currentBalance += dayIncome - dayExpense;
-      
+
       cashFlows.push({
         date,
         openingBalance,
@@ -430,7 +451,7 @@ export class FinancialService {
 
     if (params.type === 'payable' || !params.type) {
       let filtered = [...this.accountsPayable];
-      
+
       if (params.status) {
         filtered = filtered.filter(a => a.status === params.status);
       }
@@ -455,7 +476,7 @@ export class FinancialService {
 
     if (params.type === 'receivable' || !params.type) {
       let filtered = [...this.accountsReceivable];
-      
+
       if (params.status) {
         filtered = filtered.filter(a => a.status === params.status);
       }
@@ -480,7 +501,7 @@ export class FinancialService {
 
     if (params.type === 'movement' || !params.type) {
       let filtered = [...this.cashMovements];
-      
+
       if (params.category) {
         filtered = filtered.filter(m => m.category === params.category);
       }
