@@ -7,11 +7,12 @@ import { ApiService } from '../../services/api.service';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 import { ToastrService } from 'ngx-toastr';
+import { RelatorioComponent } from '../../shared/relatorio/relatorio.component';
 
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, RelatorioComponent],
   templateUrl: './sales.component.html',
   styleUrl: './sales.component.css'
 })
@@ -32,6 +33,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   methodFilter: 'all' | 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'bank_transfer' | 'check' | 'installment' = 'all';
   startDateFilter = '';
   endDateFilter = '';
+  showRelatorio = false;
 
   saleForm: FormGroup;
 
@@ -60,6 +62,11 @@ export class SalesComponent implements OnInit, OnDestroy {
   currentPage = 1;
   pageSize = 10;
   paginatedSales: Sale[] = [];
+
+
+   openRelatorio() {
+    this.showRelatorio = true;
+  }
 
   constructor(
     private api: ApiService,
@@ -325,13 +332,21 @@ export class SalesComponent implements OnInit, OnDestroy {
     this.clearItems();
     sale.items.forEach(item => this.addItem(item));
 
+    const formatForInput = (d: string | Date | null) => {
+      if (!d) return null;
+      const date = new Date(d);
+      return date.toISOString().slice(0, 10); 
+    };
+    console.log(sale)
     this.saleForm.patchValue({
       customerId: sale.customerId,
       discount: sale.discount,
       paymentMethod: sale.paymentMethod,
       paymentStatus: sale.paymentStatus,
       notes: sale.notes,
-      date: sale.date
+      date: sale.date,
+      dueDate: formatForInput(sale.dueDate ?? null)
+
     });
     this.loadVehiclesByCustomerId();
     this.saleForm.get('customerId')?.disable();
@@ -669,9 +684,9 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
 
-   resetDateDue() {
+  resetDateDue() {
     console.log('resetnado data')
-        this.saleForm.patchValue({ dueDate : null });
+    this.saleForm.patchValue({ dueDate: null });
 
   }
 }

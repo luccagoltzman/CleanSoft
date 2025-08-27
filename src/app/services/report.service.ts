@@ -32,7 +32,7 @@ export class ReportService {
   ) {}
 
   // Relatório de Clientes (RF33)
-  generateCustomerReport(params: ReportSearchParams): Observable<CustomerReport> {
+  generateCustomerReport(params: ReportSearchParams): Observable<any> {
     const { period, startDate, endDate } = params;
     
     return combineLatest([

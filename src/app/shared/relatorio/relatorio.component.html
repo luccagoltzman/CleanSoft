@@ -1,0 +1,65 @@
+<div class="modal-overlay" *ngIf="showModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Relatório de Vendas por Cliente</h3>
+      <button class="close-btn" (click)="closeModal()">&times;</button>
+    </div>
+
+    <div class="modal-filters">
+      <div class="filter-group">
+        <label>Cliente:</label>
+        <input
+          type="text"
+          placeholder="Digite o nome do cliente"
+          [(ngModel)]="customerSearch"
+          (input)="updateCustomerSuggestions()"
+        />
+        <ul class="suggestions" *ngIf="customerSuggestions.length">
+          <li *ngFor="let name of customerSuggestions" (click)="selectCustomer(name)">
+            {{ name }}
+          </li>
+        </ul>
+        <div class="selected-names">
+          <span class="tag" *ngFor="let name of filter.customerNames">
+            {{ name }} <button (click)="removeCustomer(name)">×</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>Status:</label>
+        <select [(ngModel)]="filter.paymentStatus" (change)="applyFilter()">
+          <option value="">Todos</option>
+          <option value="paid">Pago</option>
+          <option value="pending">Pendente</option>
+        </select>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Telefone</th>
+          <th>Total</th>
+          <th>Data da Venda</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let sale of filteredData">
+          <td>{{ sale.customer_name }}</td>
+          <td>{{ sale.phone }}</td>
+          <td>{{ sale.total }}</td>
+          <td>{{ sale.createdAt | date }}</td>
+          <td>{{ sale.paymentStatus }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="modal-buttons">
+      <button (click)="exportCSV()">Exportar CSV</button>
+      <button (click)="exportPDF()">Exportar PDF</button>
+    </div>
+  </div>
+</div>

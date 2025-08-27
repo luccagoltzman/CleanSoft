@@ -11,9 +11,10 @@ import {
   GeneralReport,
   ReportSearchParams,
   ExportFormat,
-  ReportConfig
+  ReportConfig,
+  Customer
 } from '../../models';
-import { Subject, takeUntil } from 'rxjs';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 
 @Component({
@@ -86,8 +87,11 @@ export class ReportsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.loadCustomers()
     this.generateGeneralReport();
-    this.loadServices()
+    this.loadServices();
+    this.loadSales();
+    // this.loadFinancialReport(); // desativvo por hora
   }
 
   ngOnDestroy() {
@@ -109,15 +113,13 @@ export class ReportsComponent implements OnInit, OnDestroy {
     if (this.activeTab === 'general') {
       this.generateGeneralReport();
     } else if (this.activeTab === 'customers') {
-      this.generateCustomerReport();
+      // this.generateCustomerReport();
     } else if (this.activeTab === 'services') {
-      this.loadServices();
+
     } else if (this.activeTab === 'products') {
-      this.loadSales();
     } else if (this.activeTab === 'stock') {
-      this.generateStockReport();
     } else if (this.activeTab === 'financial') {
-      this.generateFinancialReport();
+      // this.generateFinancialReport();
     }
   }
 
@@ -140,6 +142,165 @@ export class ReportsComponent implements OnInit, OnDestroy {
       });
   }
 
+
+  loadCustomers() {
+    this.isLoading = true;
+
+    this.api.getAll('clients', undefined, ['sales(*)', 'services(*)'])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (customers: any[]) => {
+          this.customerReport = this.buildCustomerReport(customers);
+          this.lastGenerated = new Date();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Erro ao gerar relatório de clientes:', error);
+          this.isLoading = false;
+        }
+      });
+  }
+
+  private buildCustomerReport(customers: any[]): CustomerReport {
+    const params = this.getReportParams();
+    const period = params.period as 'daily' | 'weekly' | 'monthly' | 'yearly';
+    const startDate = params.startDate ? new Date(params.startDate) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const endDate = params.endDate ? new Date(params.endDate) : new Date();
+    const now = new Date();
+
+    const totalCustomers = customers.length;
+    const activeCustomers = customers.filter(c => c.isActive).length;
+    const inactiveCustomers = totalCustomers - activeCustomers;
+    const newCustomers = customers.filter(c => new Date(c.created_at) >= startDate).length;
+
+    const topCustomers = customers
+      .map(c => {
+        const paidSales = c.sales.filter((s: any) => s.paymentStatus === 'paid');
+        const paidServices = c.services.filter((s: any) => s.paymentStatus === 'paid');
+        const allPaid = [...paidSales, ...paidServices];
+
+        const totalPurchases = allPaid.length;
+        const totalRevenue = allPaid.reduce((sum: number, s: any) => sum + Number(s.total ?? s.basePrice ?? 0), 0);
+
+        const lastPurchase = allPaid.length
+          ? new Date(Math.max(...allPaid.map((s: any) => new Date(s.createdAt).getTime())))
+          : null;
+
+        return {
+          customerId: c.id,
+          customer: c,
+          totalPurchases,
+          totalRevenue,
+          lastPurchase
+        };
+      })
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .slice(0, 5);
+
+    const delinquentCustomers: {
+      customerId: number;
+      customer: Customer;
+      overdueAmount: number;
+      overdueItems: { type: 'Venda' | 'Serviço'; amount: number; dueDate: Date; daysOverdue: number }[];
+    }[] = customers
+      .map(c => {
+        const now = new Date();
+
+        const overdueSales = c.sales
+          .filter((s: any) => s.paymentStatus === 'pending' && s.dueDate && new Date(s.dueDate) < now)
+          .map((s: { total: any; dueDate: string | number | Date; }) => ({
+            type: 'Venda' as const,
+            amount: Number(s.total),
+            dueDate: new Date(s.dueDate),
+            daysOverdue: Math.floor((now.getTime() - new Date(s.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+          }));
+
+        const overdueServices = c.services
+          .filter((s: any) => s.paymentStatus === 'pending' && s.dueDate && new Date(s.dueDate) < now)
+          .map((s: { basePrice: any; dueDate: string | number | Date; }) => ({
+            type: 'Serviço' as const,
+            amount: Number(s.basePrice),
+            dueDate: new Date(s.dueDate),
+            daysOverdue: Math.floor((now.getTime() - new Date(s.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+          }));
+
+        const overdueItems = [...overdueSales, ...overdueServices];
+        if (overdueItems.length === 0) return null; // descarta clientes sem itens em atraso
+
+        const overdueAmount = overdueItems.reduce((sum, i) => sum + i.amount, 0);
+
+        return {
+          customerId: c.id,
+          customer: c,
+          overdueAmount,
+          overdueItems
+        };
+      })
+      .filter(c => c !== null) as {
+        customerId: number;
+        customer: Customer;
+        overdueAmount: number;
+        overdueItems: { type: 'Venda' | 'Serviço'; amount: number; dueDate: Date; daysOverdue: number }[];
+      }[];
+
+
+    const customersByPeriod = this.groupCustomersByPeriod(customers, period);
+
+
+    console.log(delinquentCustomers)
+    return {
+      period,
+      startDate,
+      endDate,
+      totalCustomers,
+      newCustomers,
+      activeCustomers,
+      inactiveCustomers,
+      topCustomers,
+      delinquentCustomers,
+      customersByPeriod
+    };
+  }
+
+  private groupCustomersByPeriod(customers: any[], period: string) {
+    const groups: Record<string, { newCustomers: number; activeCustomers: number }> = {};
+
+    customers.forEach(c => {
+      const date = new Date(c.created_at);
+      let key = '';
+
+      switch (period) {
+        case 'daily':
+          key = date.toISOString().slice(0, 10);
+          break;
+        case 'weekly':
+          const week = Math.ceil(date.getDate() / 7);
+          key = `${date.getFullYear()}-W${week}`;
+          break;
+        case 'monthly':
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          break;
+        case 'yearly':
+          key = `${date.getFullYear()}`;
+          break;
+      }
+
+      if (!groups[key]) {
+        groups[key] = { newCustomers: 0, activeCustomers: 0 };
+      }
+
+      groups[key].newCustomers++;
+      if (c.isActive) groups[key].activeCustomers++;
+    });
+
+    return Object.keys(groups).map(periodKey => ({
+      period: periodKey,
+      newCustomers: groups[periodKey].newCustomers,
+      activeCustomers: groups[periodKey].activeCustomers
+    }));
+  }
+
+
   generateCustomerReport() {
     this.isLoading = true;
     const params = this.getReportParams();
@@ -161,7 +322,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
 
 
   loadServices() {
-    this.api.getAll('services', { isActive: 'eq.true' }, ['services_with_addons!left(serviceIdOddons(*))'])
+    this.api.getAll('services', undefined, ['services_with_addons!left(serviceIdOddons(*))'])
       .pipe(takeUntil(this.destroy$))
       .subscribe(services => {
         this.services = services;
@@ -488,25 +649,112 @@ export class ReportsComponent implements OnInit, OnDestroy {
     };
   }
 
-
-  generateFinancialReport() {
+  loadFinancialReport() {
     this.isLoading = true;
-    const params = this.getReportParams();
 
-    this.reportService.generateFinancialReport(params)
+    forkJoin({
+      payables: this.api.getAll('accounts_payable'),
+      receivables: this.api.getAll('accounts_receivable'),
+      movements: this.api.getAll('cash_movements')
+    })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (report) => {
-          this.financialReport = report;
-          this.lastGenerated = new Date();
+        next: ({ payables, receivables, movements }) => {
+          console.log('populando campos de financial')
+          this.populateFinancialReport(payables, receivables, movements);
           this.isLoading = false;
         },
-        error: (error) => {
-          console.error('Erro ao gerar relatório financeiro:', error);
+        error: () => {
           this.isLoading = false;
         }
       });
   }
+
+
+  populateFinancialReport(payables: any[], receivables: any[], movements: any[]) {
+    const today = new Date();
+
+    const totalPayable = payables.reduce((acc, item) => acc + item.amount, 0);
+    const totalPayablePaid = payables.filter(p => p.status === 'paid').reduce((acc, item) => acc + item.amount, 0);
+    const totalPayablePending = payables.filter(p => p.status === 'pending').reduce((acc, item) => acc + item.amount, 0);
+    const totalPayableOverdue = payables.filter(p => p.status === 'pending' && new Date(p.dueDate) < today).reduce((acc, item) => acc + item.amount, 0);
+    const overduePayableCount = payables.filter(p => p.status === 'pending' && new Date(p.dueDate) < today).length;
+
+    const totalReceivable = receivables.reduce((acc, item) => acc + item.amount, 0);
+    const totalReceivablePaid = receivables.filter(r => r.status === 'paid').reduce((acc, item) => acc + item.amount, 0);
+    const totalReceivablePending = receivables.filter(r => r.status === 'pending').reduce((acc, item) => acc + item.amount, 0);
+    const totalReceivableOverdue = receivables.filter(r => r.status === 'pending' && new Date(r.dueDate) < today).reduce((acc, item) => acc + item.amount, 0);
+    const overdueReceivableCount = receivables.filter(r => r.status === 'pending' && new Date(r.dueDate) < today).length;
+
+    const totalIncome = movements.filter(m => m.type === 'income').reduce((acc, item) => acc + item.amount, 0);
+    const totalExpense = movements.filter(m => m.type === 'expense').reduce((acc, item) => acc + item.amount, 0);
+    const openingBalance = 0;
+    const closingBalance = openingBalance + totalIncome - totalExpense;
+    const netCashFlow = totalIncome - totalExpense;
+
+    const dailyCashFlow = movements.reduce((acc: any[], mov) => {
+      const date = new Date(mov.date).toISOString().split('T')[0];
+      const existing = acc.find(d => d.date === date);
+
+      if (existing) {
+        if (mov.type === 'income') {
+          existing.income += mov.amount;
+        } else {
+          existing.expense += mov.amount;
+        }
+        existing.balance = existing.income - existing.expense;
+      } else {
+        acc.push({
+          date,
+          income: mov.type === 'income' ? mov.amount : 0,
+          expense: mov.type === 'expense' ? mov.amount : 0,
+          balance: mov.type === 'income' ? mov.amount : -mov.amount
+        });
+      }
+      return acc;
+    }, []);
+
+    this.financialReport = {
+      period: 'monthly',
+      startDate: new Date(),
+      endDate: new Date(),
+      cashFlow: {
+        openingBalance,
+        totalIncome,
+        totalExpense,
+        closingBalance,
+        netCashFlow
+      },
+      accountsPayable: {
+        total: totalPayable,
+        paid: totalPayablePaid,
+        pending: totalPayablePending,
+        overdue: overduePayableCount,
+        overdueAmount: totalPayableOverdue
+      },
+      accountsReceivable: {
+        total: totalReceivable,
+        received: totalReceivablePaid,
+        pending: totalReceivablePending,
+        overdue: overdueReceivableCount,
+        overdueAmount: totalReceivableOverdue
+      },
+      incomeByCategory: movements
+        .filter(m => m.type === 'income')
+        .reduce((acc: any, mov) => {
+          acc[mov.category] = (acc[mov.category] || 0) + mov.amount;
+          return acc;
+        }, {}),
+      expenseByCategory: movements
+        .filter(m => m.type === 'expense')
+        .reduce((acc: any, mov) => {
+          acc[mov.category] = (acc[mov.category] || 0) + mov.amount;
+          return acc;
+        }, {}),
+      dailyCashFlow
+    } as FinancialReportData;
+  }
+
 
   // Exportação
   exportReport() {

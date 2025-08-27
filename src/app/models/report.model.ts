@@ -3,7 +3,6 @@ import { Vehicle } from './customer.model';
 import { Employee } from './employee.model';
 import { Service } from './service.model';
 import { Product } from './product.model';
-import { Sale } from './sale.model';
 import { CashMovementCategory } from './financial.model';
 
 // Relatórios de Clientes (RF33)
@@ -15,19 +14,24 @@ export interface CustomerReport {
   newCustomers: number;
   activeCustomers: number;
   inactiveCustomers: number;
+  delinquentCustomers: {
+    customerId: number;
+    customer: Customer;
+    overdueAmount: number;
+    overdueItems: {
+      type: 'Venda' | 'Serviço';
+      amount: number;
+      dueDate: Date;
+      daysOverdue: number;
+    }[];
+  }[];
+
   topCustomers: {
     customerId: number;
     customer: Customer;
     totalPurchases: number;
     totalRevenue: number;
-    lastPurchase: Date;
-  }[];
-  delinquentCustomers: {
-    customerId: number;
-    customer: Customer;
-    overdueAmount: number;
-    daysOverdue: number;
-    lastPayment: Date;
+    lastPurchase: Date | null;
   }[];
   customersByPeriod: {
     period: string;

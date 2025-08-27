@@ -16,17 +16,17 @@
             </option>
           </select>
         </div>
-        
+
         <div class="form-group">
           <label for="startDate">Data Inicial</label>
           <input type="date" id="startDate" formControlName="startDate" (change)="onDateChange()">
         </div>
-        
+
         <div class="form-group">
           <label for="endDate">Data Final</label>
           <input type="date" id="endDate" formControlName="endDate" (change)="onDateChange()">
         </div>
-        
+
         <div class="form-group">
           <button type="button" class="btn btn-primary" (click)="generateReport()" [disabled]="isLoading">
             <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
@@ -39,22 +39,16 @@
 
   <!-- Navegação por abas -->
   <div class="tabs-navigation">
-    <button 
-      *ngFor="let tab of ['general', 'customers', 'services', 'products', 'stock', 'financial']"
-      [class.active]="activeTab === tab"
-      (click)="setActiveTab(tab)"
-      class="tab-button">
-      <i class="fas" [class.fa-chart-line]="tab === 'general'"
-         [class.fa-users]="tab === 'customers'"
-         [class.fa-tools]="tab === 'services'"
-         [class.fa-box]="tab === 'products'"
-         [class.fa-warehouse]="tab === 'stock'"
-         [class.fa-dollar-sign]="tab === 'financial'"></i>
-      {{ tab === 'general' ? 'Geral' : 
-         tab === 'customers' ? 'Clientes' :
-         tab === 'services' ? 'Serviços' :
-         tab === 'products' ? 'Produtos' :
-         tab === 'stock' ? 'Estoque' : 'Financeiro' }}
+    <button *ngFor="let tab of ['general', 'customers', 'services', 'products', 'stock']"
+      [class.active]="activeTab === tab" (click)="setActiveTab(tab)" class="tab-button">
+      <i class="fas" [class.fa-chart-line]="tab === 'general'" [class.fa-users]="tab === 'customers'"
+        [class.fa-tools]="tab === 'services'" [class.fa-box]="tab === 'products'" [class.fa-warehouse]="tab === 'stock'"
+        [class.fa-dollar-sign]="tab === 'financial'"></i>
+      {{ tab === 'general' ? 'Geral' :
+      tab === 'customers' ? 'Clientes' :
+      tab === 'services' ? 'Serviços' :
+      tab === 'products' ? 'Produtos' :
+      tab === 'stock' ? 'Estoque' : 'Financeiro' }}
     </button>
   </div>
 
@@ -122,28 +116,28 @@
             <div class="trend-item">
               <span class="trend-label">Crescimento de Vendas</span>
               <span class="trend-value" [class.positive]="generalReport.trends.salesGrowth > 0"
-                    [class.negative]="generalReport.trends.salesGrowth < 0">
+                [class.negative]="generalReport.trends.salesGrowth < 0">
                 {{ formatPercentage(generalReport.trends.salesGrowth) }}
               </span>
             </div>
             <div class="trend-item">
               <span class="trend-label">Crescimento de Receita</span>
               <span class="trend-value" [class.positive]="generalReport.trends.revenueGrowth > 0"
-                    [class.negative]="generalReport.trends.revenueGrowth < 0">
+                [class.negative]="generalReport.trends.revenueGrowth < 0">
                 {{ formatPercentage(generalReport.trends.revenueGrowth) }}
               </span>
             </div>
             <div class="trend-item">
               <span class="trend-label">Crescimento de Clientes</span>
               <span class="trend-value" [class.positive]="generalReport.trends.customerGrowth > 0"
-                    [class.negative]="generalReport.trends.customerGrowth < 0">
+                [class.negative]="generalReport.trends.customerGrowth < 0">
                 {{ formatPercentage(generalReport.trends.customerGrowth) }}
               </span>
             </div>
             <div class="trend-item">
               <span class="trend-label">Crescimento de Serviços</span>
               <span class="trend-value" [class.positive]="generalReport.trends.serviceGrowth > 0"
-                    [class.negative]="generalReport.trends.serviceGrowth < 0">
+                [class.negative]="generalReport.trends.serviceGrowth < 0">
                 {{ formatPercentage(generalReport.trends.serviceGrowth) }}
               </span>
             </div>
@@ -153,7 +147,7 @@
         <!-- Top Performers -->
         <div class="top-performers">
           <h3>Top Performers</h3>
-          
+
           <!-- Top Clientes -->
           <div class="performer-section">
             <h4>Top Clientes</h4>
@@ -172,7 +166,7 @@
                     <td>{{ customer.customer.name }}</td>
                     <td>{{ formatNumber(customer.totalPurchases) }}</td>
                     <td>{{ formatCurrency(customer.totalRevenue) }}</td>
-                    <td>{{ formatDate(customer.lastPurchase) }}</td>
+                    <td>{{ customer.lastPurchase ? formatDate(customer.lastPurchase) : '-' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -290,6 +284,8 @@
         <!-- Top Clientes -->
         <div class="section">
           <h3>Top Clientes por Receita</h3>
+
+
           <div class="table-container">
             <table class="data-table">
               <thead>
@@ -307,7 +303,7 @@
                   <td>{{ customer.customer.phone }}</td>
                   <td>{{ formatNumber(customer.totalPurchases) }}</td>
                   <td>{{ formatCurrency(customer.totalRevenue) }}</td>
-                  <td>{{ formatDate(customer.lastPurchase) }}</td>
+                  <td>{{ customer.lastPurchase ? formatDate(customer.lastPurchase) : '-' }}</td>
                 </tr>
               </tbody>
             </table>
@@ -317,29 +313,37 @@
         <!-- Clientes Inadimplentes -->
         <div class="section">
           <h3>Clientes Inadimplentes</h3>
-          <div class="table-container">
+          <div class="table-container" *ngIf="(customerReport?.delinquentCustomers?.length ?? 0) > 0; else noData">
             <table class="data-table">
               <thead>
                 <tr>
                   <th>Cliente</th>
                   <th>Telefone</th>
+                  <th>Tipo</th>
                   <th>Valor em Atraso</th>
                   <th>Dias em Atraso</th>
-                  <th>Último Pagamento</th>
+                  <th>Dt. Vencimento</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let customer of customerReport.delinquentCustomers">
-                  <td>{{ customer.customer.name }}</td>
-                  <td>{{ customer.customer.phone }}</td>
-                  <td>{{ formatCurrency(customer.overdueAmount) }}</td>
-                  <td>{{ formatNumber(customer.daysOverdue) }}</td>
-                  <td>{{ formatDate(customer.lastPayment) }}</td>
-                </tr>
+                <ng-container *ngFor="let customer of customerReport.delinquentCustomers">
+                  <tr *ngFor="let item of customer.overdueItems">
+                    <td>{{ customer.customer.name }}</td>
+                    <td>{{ customer.customer.phone }}</td>
+                    <td>{{ item.type }}</td>
+                    <td>{{ formatCurrency(item.amount) }}</td>
+                    <td>{{ formatNumber(item.daysOverdue) }}</td>
+                    <td>{{ formatDate(item.dueDate) }}</td>
+                  </tr>
+                </ng-container>
               </tbody>
             </table>
           </div>
+          <ng-template #noData>
+            <p>Nenhum cliente inadimplente no período.</p>
+          </ng-template>
         </div>
+
       </div>
     </div>
 
@@ -595,7 +599,7 @@
         <!-- Produtos com Estoque Baixo -->
         <div class="section">
           <h3>Produtos com Estoque Baixo</h3>
-          <div class="table-container">
+          <div class="table-container" *ngIf="(stockReport?.lowStock?.length ?? 0) > 0; else noData">
             <table class="data-table">
               <thead>
                 <tr>
@@ -626,7 +630,7 @@
         <!-- Produtos Sem Estoque -->
         <div class="section">
           <h3>Produtos Sem Estoque</h3>
-          <div class="table-container">
+          <div class="table-container" *ngIf="(stockReport?.outOfStock?.length ?? 0) > 0; else noData">
             <table class="data-table">
               <thead>
                 <tr>
@@ -646,11 +650,16 @@
               </tbody>
             </table>
           </div>
+
+
         </div>
+
       </div>
     </div>
 
     <!-- Relatório Financeiro -->
+    <!-- Desabilitado -->
+
     <div *ngIf="activeTab === 'financial'" class="tab-pane">
       <div class="report-header">
         <h2>Relatório Financeiro</h2>
@@ -765,7 +774,7 @@
             </option>
           </select>
         </div>
-        
+
         <div class="form-group">
           <label for="chartType">Tipo de Gráfico</label>
           <select id="chartType" formControlName="chartType">
@@ -775,7 +784,7 @@
             <option value="doughnut">Rosca</option>
           </select>
         </div>
-        
+
         <div class="form-group">
           <label for="pageSize">Tamanho da Página</label>
           <select id="pageSize" formControlName="pageSize">
@@ -783,7 +792,7 @@
             <option value="Letter">Letter</option>
           </select>
         </div>
-        
+
         <div class="form-group">
           <label for="orientation">Orientação</label>
           <select id="orientation" formControlName="orientation">
@@ -791,7 +800,7 @@
             <option value="landscape">Paisagem</option>
           </select>
         </div>
-        
+
         <div class="form-group">
           <button type="button" class="btn btn-success" (click)="exportReport()">
             <i class="fas fa-download"></i> Exportar
@@ -801,3 +810,8 @@
     </form>
   </div>
 </div>
+
+
+<ng-template #noData>
+  <p style="text-align: center; margin-top: 10px;">Nenhum dado encontrado.</p>
+</ng-template>

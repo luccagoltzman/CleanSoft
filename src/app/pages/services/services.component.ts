@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Service, ServiceCategory, AdditionalService, ServiceSearchParams, Customer, PaymentMethod, PaymentStatus, Vehicle } from '../../models';
-import { forkJoin, Subject, takeUntil } from 'rxjs';
+import {  Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
@@ -232,7 +232,11 @@ export class ServicesComponent implements OnInit, OnDestroy {
 
     this.selectedAdditionalServices = (service.services_with_addons || [])
       .map((item: any) => item.serviceIdOddons.id);
-
+    const formatForInput = (d: string | Date | null) => {
+      if (!d) return null;
+      const date = new Date(d);
+      return date.toISOString().slice(0, 10); // yyyy-MM-dd
+    };
     this.serviceForm.patchValue({
       name: service.name,
       description: service.description,
@@ -240,7 +244,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
       category: service.category,
       basePrice: service.basePrice,
       vehicleId: service.vehicleId,
-      dueDate: service.dueDate,
+      dueDate: formatForInput(service.dueDate ?? null),
       paymentMethod: service.paymentMethod,
       paymentStatus: service.paymentStatus,
       additionalServices: this.selectedAdditionalServices
