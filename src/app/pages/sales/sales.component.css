@@ -378,23 +378,84 @@
 .form-group label {
   font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  display: block;
+}
+
+.item-grid .form-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .form-input,
 .form-select,
 .form-textarea {
-  padding: 12px;
+  padding: 8px 12px;
   border: 2px solid var(--border-color);
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: border-color 0.3s;
   font-family: inherit;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.item-grid .form-input,
+.item-grid .form-select {
+  height: 40px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+}
+
+.item-grid .form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8.825L1.175 4 2.238 2.938 6 6.7l3.763-3.763L10.825 4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.item-grid .form-select option {
+  font-size: 0.95rem;
+  padding: 8px;
+}
+
+.item-total strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.item-quantity .form-input,
+.item-price .form-input,
+.item-discount .form-input {
+  text-align: right;
 }
 
 .form-textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 60px;
+}
+
+.item-notes {
+  margin-bottom: 0;
+}
+
+.item-notes .form-textarea {
+  min-height: 50px;
+  font-size: 0.95rem;
+  background-color: var(--background-light);
 }
 
 .form-input:focus,
@@ -443,24 +504,114 @@
   border: 1px solid var(--border-color);
 }
 
-.item-header {
+.item-content {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.item-header h4 {
-  margin: 0;
-  color: var(--text-primary);
+.item-grid {
+  display: grid;
+  grid-template-columns: 2fr 100px 120px 100px auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.item-main {
+  grid-column: 1;
+}
+
+.item-quantity {
+  grid-column: 2;
+}
+
+.item-price {
+  grid-column: 3;
+}
+
+.item-discount {
+  grid-column: 4;
 }
 
 .item-total {
-  text-align: right;
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid var(--border-color);
+  grid-column: 5;
+  margin: 0;
+  padding: 0;
+  border: none;
+  align-self: end;
+  white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+  .item-grid {
+    grid-template-columns: 2fr 80px 100px 80px auto;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .item-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .item-main {
+    grid-column: 1 / -1;
+  }
+
+  .item-quantity,
+  .item-price,
+  .item-discount {
+    grid-column: auto;
+  }
+
+  .item-total {
+    grid-column: 1 / -1;
+    text-align: right;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+.item-header {
+  margin-bottom: 12px;
+}
+
+.item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-number {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--background-light);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-icon.btn-sm {
+  width: 24px;
+  height: 24px;
+  font-size: 0.8rem;
+}
+
+.item-total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--background-light);
+  border-radius: 6px;
   color: var(--success-color);
+}
+
+.item-total strong {
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 /* Seção de Totais */
