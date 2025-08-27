@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FinancialService } from '../../services/financial.service';
@@ -13,13 +13,14 @@ import {
   CashFlowReport,
   FinancialSearchParams
 } from '../../models';
-import { forkJoin, Subject, takeUntil } from 'rxjs';
+import { forkJoin, Subject, takeUntil, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { StatsSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-financial',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, StatsSkeletonComponent],
   templateUrl: './financial.component.html',
   styleUrl: './financial.component.css'
 })
@@ -36,6 +37,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
   selectedAccount: AccountPayable | AccountReceivable | null = null;
   selectedMovement: CashMovement | null = null;
   showForm = false;
+  isLoading = false;
   isEditing = false;
   isCreating = false;
 
@@ -81,7 +83,8 @@ export class FinancialComponent implements OnInit, OnDestroy {
     private financialService: FinancialService,
     private api: ApiService,
     private fb: FormBuilder,
-    private toast: ToastrService
+    private toast: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {
     this.accountForm = this.fb.group({
       description: ['', Validators.required],
@@ -117,6 +120,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
   }
 
   loadData() {
+    this.isLoading = true;
     forkJoin({
       payables: this.api.getAll('accounts_payable'),
       receivables: this.api.getAll('accounts_receivable'),
@@ -130,6 +134,11 @@ export class FinancialComponent implements OnInit, OnDestroy {
 
         this.updateStats();
         this.loadReports();
+        // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+        timer(1500).subscribe(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       });
   }
 

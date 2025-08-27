@@ -1,18 +1,19 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Sale, SaleItem, PaymentMethod, PaymentStatus, Customer, Vehicle, Product, Service } from '../../models';
-import { Subject, takeUntil, forkJoin, throwError, switchMap } from 'rxjs';
+import { Subject, takeUntil, forkJoin, throwError, switchMap, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 import { ToastrService } from 'ngx-toastr';
 import { RelatorioComponent } from '../../shared/relatorio/relatorio.component';
+import { StatsSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, RelatorioComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, RelatorioComponent, StatsSkeletonComponent],
   templateUrl: './sales.component.html',
   styleUrl: './sales.component.css'
 })
@@ -34,6 +35,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   startDateFilter = '';
   endDateFilter = '';
   showRelatorio = false;
+  isLoading = false;
 
   saleForm: FormGroup;
 
@@ -72,7 +74,8 @@ export class SalesComponent implements OnInit, OnDestroy {
     private api: ApiService,
     private fb: FormBuilder,
     private paginationService: PaginationService,
-    private toast: ToastrService
+    private toast: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {
     this.saleForm = this.fb.group({
       customerId: ['', Validators.required],
@@ -99,6 +102,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   loadSales() {
+    this.isLoading = true;
     this.api.getAll('sales', undefined, ['sale_items(*)']).subscribe((sales: any[]) => {
       const formattedSales = sales.map(sale => ({
         id: sale.id,
@@ -132,6 +136,11 @@ export class SalesComponent implements OnInit, OnDestroy {
       this.sales = formattedSales; ''
       this.applyFilters();
       this.loadStats(); // Carrega as estatísticas após carregar as vendas
+      // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+      timer(1500).subscribe(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      });
     });
   }
 

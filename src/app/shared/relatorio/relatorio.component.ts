@@ -1,17 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ApiService } from '../../services/api.service';
+import { SkeletonComponent, StatsSkeletonComponent, TableSkeletonComponent } from '../components';
+import { timer } from 'rxjs';
 
 @Component({
   selector: 'app-relatorio',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SkeletonComponent, StatsSkeletonComponent, TableSkeletonComponent],
   templateUrl: './relatorio.component.html',
-  styleUrls: ['./relatorio.component.scss']
+  styleUrls: ['./relatorio.component.css']
 })
 export class RelatorioComponent {
   showModal = false;
@@ -43,7 +45,10 @@ export class RelatorioComponent {
   minValueFilter = '';
   maxValueFilter = '';
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   openModal(type: string) {
     this.reportType = type;
@@ -58,11 +63,16 @@ export class RelatorioComponent {
         this.data = sales;
         this.initFilter();
         this.applyFilter();
-        this.isLoading = false;
+        // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+        timer(1500).subscribe(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       },
       error: (err) => {
         console.error('Erro ao carregar vendas:', err);
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }

@@ -1,17 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Employee } from '../../models';
-import { of, Subject, takeUntil } from 'rxjs';
+import { of, Subject, takeUntil, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
+import { StatsSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-employees',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent],
   templateUrl: './employees.component.html',
   styleUrl: './employees.component.css'
 })
@@ -24,6 +25,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   isCreating = false;
   showForm = false;
   showDismissalForm = false;
+  isLoading = false;
   searchTerm = '';
   positionFilter = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
@@ -58,7 +60,8 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private apiService: ApiService,
     private paginationService: PaginationService,
-    private toast: ToastrService
+    private toast: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {
     this.employeeForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -116,6 +119,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   }
 
   loadEmployees() {
+    this.isLoading = true;
     this.apiService.getAll('employees')
       .pipe(takeUntil(this.destroy$))
       .subscribe(employees => {
@@ -123,6 +127,11 @@ export class EmployeesComponent implements OnInit, OnDestroy {
         console.log(employees);
         this.loadStats()
         this.applyFilters();
+        // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+        timer(1500).subscribe(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       });
   }
 

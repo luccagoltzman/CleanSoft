@@ -1,17 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Vehicle, Customer } from '../../models';
-import { Subject, takeUntil, combineLatest, of, Observable } from 'rxjs';
+import { Subject, takeUntil, combineLatest, of, Observable, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
+import { StatsSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-vehicles',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent],
   templateUrl: './vehicles.component.html',
   styleUrl: './vehicles.component.css'
 })
@@ -23,6 +24,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   isEditing = false;
   isCreating = false;
   showForm = false;
+  isLoading = false;
   searchTerm = '';
   brandFilter = '';
   customerFilter = '';
@@ -97,7 +99,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private api: ApiService,
     private paginationService: PaginationService,
-    private toast: ToastrService
+    private toast: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {
     this.vehicleForm = this.fb.group({
       customerId: ['', Validators.required],
@@ -122,12 +125,18 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
   loadVehicles() {
+    this.isLoading = true;
     this.api.getAll('vehicles')
       .pipe(takeUntil(this.destroy$))
       .subscribe(vehicles => {
         this.vehicles = vehicles;
         this.applyFilters();
         this.loadStats();
+        // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+        timer(1500).subscribe(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       });
   }
 

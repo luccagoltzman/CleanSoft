@@ -50,7 +50,7 @@
     <!-- Visão Geral -->
     <div *ngIf="activeTab === 'overview'" class="overview-tab">
       <!-- Estatísticas -->
-      <div class="stats-section">
+      <div class="stats-section" *ngIf="!isLoading">
 
         <!-- Seção Contas a Pagar -->
         <div class="stats-group">
@@ -173,6 +173,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Skeleton das Estatísticas -->
+      <app-stats-skeleton *ngIf="isLoading" [statsCount]="7"></app-stats-skeleton>
     </div>
 
     <!-- Contas a Pagar -->

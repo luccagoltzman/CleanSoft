@@ -1,17 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Service, ServiceCategory, AdditionalService, ServiceSearchParams, Customer, PaymentMethod, PaymentStatus, Vehicle } from '../../models';
-import {  Subject, takeUntil } from 'rxjs';
+import {  Subject, takeUntil, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 import { ToastrService } from 'ngx-toastr';
+import { StatsSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-services',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent],
   templateUrl: './services.component.html',
   styleUrl: './services.component.css'
 })
@@ -23,6 +24,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
   isCreating = false;
   showForm = false;
   showAdditionalServiceForm = false;
+  isLoading = false;
   searchTerm = '';
   categoryFilter = '';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
@@ -64,7 +66,8 @@ export class ServicesComponent implements OnInit, OnDestroy {
     private api: ApiService,
     private fb: FormBuilder,
     private paginationService: PaginationService,
-    private toast: ToastrService
+    private toast: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {
     this.serviceForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -126,12 +129,18 @@ export class ServicesComponent implements OnInit, OnDestroy {
   }
 
   loadServices() {
+    this.isLoading = true;
     this.api.getAll('services', undefined, ['services_with_addons!left(serviceIdOddons(*))'])
       .pipe(takeUntil(this.destroy$))
       .subscribe(services => {
         this.services = services;
         this.applyFilters();
         this.updateStats(services);
+        // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+        timer(1500).subscribe(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       });
   }
 

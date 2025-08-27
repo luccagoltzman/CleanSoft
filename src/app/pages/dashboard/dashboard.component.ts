@@ -1,13 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { forkJoin, Subject, takeUntil } from 'rxjs';
+import { forkJoin, Subject, takeUntil, timer } from 'rxjs';
 import { Customer, Sale, Service, Product, Vehicle } from '../../models';
 import { ApiService } from '../../services/api.service';
+import { StatsSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, StatsSkeletonComponent],
   providers: [ApiService],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
@@ -26,8 +27,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   recentSales: any[] = [];
   lowStockProducts: any[] = [];
+  isLoading = false;
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.loadDashboardData();
@@ -39,6 +44,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboardData() {
+    this.isLoading = true;
     forkJoin({
       customers: this.api.getAll('clients', undefined, ['vehicles(*)']),
       sales: this.api.getAll('sales', undefined, ['sale_items(*)']),
@@ -58,9 +64,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.updateStats(data);
         this.updateRecentSales(data.sales);
         this.updateLowStockProducts(data.products);
+        // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+        timer(1500).subscribe(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       },
       error: (error) => {
         console.error('Erro ao carregar dados do dashboard:', error);
+        this.isLoading = false;
+        this.cdr.detectChanges();
         // Aqui você pode adicionar uma notificação de erro para o usuário
       }
     });

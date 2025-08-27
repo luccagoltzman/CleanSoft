@@ -2,13 +2,11 @@ import { Component, OnInit, OnDestroy, HostListener, Inject, PLATFORM_ID, Change
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { User } from './models';
-import { LoadingService } from './services/loading.service';
-import { SpinnerComponent } from './shared/spinner/spinner.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, SpinnerComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -20,11 +18,8 @@ export class AppComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   isMobile = false;
   mobileMenuOpen = false;
-  loading = false;
-
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
-    private loadingService: LoadingService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -33,15 +28,6 @@ export class AppComponent implements OnInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       this.checkScreenSize();
     }
-
-    // Resetar o estado do loading na inicialização
-    this.loadingService.reset();
-
-    // Inscrever no serviço de carregamento
-    this.loadingService.loading$.subscribe(loading => {
-      this.loading = loading;
-      this.cdr.markForCheck();
-    });
   }
 
   ngOnDestroy() {

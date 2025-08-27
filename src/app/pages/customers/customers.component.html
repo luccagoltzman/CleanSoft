@@ -10,8 +10,10 @@
     </div>
   </div>
 
+
+
   <!-- Estatísticas -->
-  <div class="stats-section">
+  <div class="stats-section" *ngIf="!isLoading">
     <div class="stat-card">
       <div class="stat-icon">
         <i class="fas fa-users"></i>
@@ -49,6 +51,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Skeleton das Estatísticas -->
+  <app-stats-skeleton *ngIf="isLoading" [statsCount]="4"></app-stats-skeleton>
 
   <!-- Filtros e Busca -->
   <div class="filters-section">

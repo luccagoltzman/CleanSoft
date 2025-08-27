@@ -1,17 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Product, Supplier, StockMovementReason } from '../../models';
-import {  Subject, takeUntil } from 'rxjs';
+import {  Subject, takeUntil, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
+import { StatsSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent],
   templateUrl: './products.component.html',
   styleUrl: './products.component.css'
 })
@@ -55,6 +56,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
   availableCategories: string[] = [];
   availableUnits: string[] = [];
   stockMovementReasons = Object.values(StockMovementReason);
+  isLoading = false;
 
   private destroy$ = new Subject<void>();
 
@@ -67,7 +69,8 @@ export class ProductsComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private api: ApiService,
     private paginationService: PaginationService,
-    private toast: ToastrService
+    private toast: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {
     this.productForm = this.fb.group({
       category: ['', Validators.required],
@@ -112,14 +115,27 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
   loadProducts() {
+    this.isLoading = true;
     this.api.getAll('products')
       .pipe(takeUntil(this.destroy$))
-      .subscribe(products => {
-        this.products = products;
-        this.applyFilters();
-        this.loadStats();
-        this.loadAvailableCategories();
-        this.loadAvailableUnits()
+      .subscribe({
+        next: (products) => {
+          this.products = products;
+          this.applyFilters();
+          this.loadStats();
+          this.loadAvailableCategories();
+          this.loadAvailableUnits();
+          // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+          timer(1500).subscribe(() => {
+            this.isLoading = false;
+            this.cdr.detectChanges();
+          });
+        },
+        error: (error) => {
+          console.error('Erro ao carregar produtos:', error);
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        }
       });
   }
 

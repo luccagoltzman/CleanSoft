@@ -5,6 +5,8 @@
       <button class="close-btn" (click)="closeModal()">&times;</button>
     </div>
 
+
+
     <!-- Estatísticas do Relatório -->
     <div class="report-stats" *ngIf="!isLoading">
       <div class="stat-item">
@@ -20,6 +22,9 @@
         <div class="stat-label">Ticket Médio</div>
       </div>
     </div>
+
+    <!-- Skeleton das Estatísticas -->
+    <app-stats-skeleton *ngIf="isLoading" [statsCount]="3"></app-stats-skeleton>
 
     <div class="modal-filters">
       <!-- Filtros existentes -->
@@ -108,10 +113,16 @@
       </div>
     </div>
 
-    <!-- Loading -->
-    <div class="loading-container" *ngIf="isLoading">
-      <div class="loading-spinner"></div>
-      <p>Carregando dados...</p>
+    <!-- Skeleton da Tabela -->
+    <div class="table-container" *ngIf="isLoading">
+      <div class="results-info skeleton">
+        <app-skeleton [config]="{ type: 'text', width: '200px', height: '20px' }"></app-skeleton>
+      </div>
+      <app-table-skeleton 
+        [headers]="['Cliente', 'Telefone', 'Total', 'Data da Venda', 'Status', 'Método']"
+        [rows]="8"
+        [cells]="6">
+      </app-table-skeleton>
     </div>
 
     <!-- Tabela de resultados -->

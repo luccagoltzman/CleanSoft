@@ -1,20 +1,20 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Customer } from '../../models';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { ToastrService } from 'ngx-toastr';
 
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
-import { SpinnerComponent } from '../../shared/spinner/spinner.component';
+import { StatsSkeletonComponent } from '../../shared/components';
 import { trigger, style, animate, transition } from '@angular/animations';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, SpinnerComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css',
     animations: [
@@ -38,6 +38,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
   customerForm: FormGroup;
   stats = { total: 0, active: 0, inactive: 0, withVehicles: 0 };
+  isLoading = false;
 
   private destroy$ = new Subject<void>();
 
@@ -50,7 +51,8 @@ export class CustomersComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private api: ApiService,
     private paginationService: PaginationService,
-    private toast: ToastrService
+    private toast: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {
     this.customerForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -73,6 +75,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
   }
 
   loadCustomers() {
+    this.isLoading = true;
     this.api.getAll('clients', { select: '*,vehicles(*)' })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -80,9 +83,16 @@ export class CustomersComponent implements OnInit, OnDestroy {
           this.customers = customers;
           this.applyFilters();
           this.loadStats();
+          // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
+          timer(1500).subscribe(() => {
+            this.isLoading = false;
+            this.cdr.detectChanges();
+          });
         },
         error: (error) => {
           console.error('Erro ao carregar clientes:', error);
+          this.isLoading = false;
+          this.cdr.detectChanges();
         }
       });
   }
