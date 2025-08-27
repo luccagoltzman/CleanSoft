@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ReportService } from '../../services/report.service';
+import { ToastrService } from 'ngx-toastr';
 import {
   CustomerReport,
   ServiceReport,
@@ -67,7 +68,8 @@ export class ReportsComponent implements OnInit, OnDestroy {
   constructor(
     private reportService: ReportService,
     private fb: FormBuilder,
-    private api: ApiService
+    private api: ApiService,
+    private toast: ToastrService
   ) {
     this.reportForm = this.fb.group({
       period: ['monthly', Validators.required],
@@ -134,10 +136,12 @@ export class ReportsComponent implements OnInit, OnDestroy {
           this.generalReport = report;
           this.lastGenerated = new Date();
           this.isLoading = false;
+          this.toast.success('Relatório geral gerado com sucesso!');
         },
         error: (error) => {
           console.error('Erro ao gerar relatório geral:', error);
           this.isLoading = false;
+          this.toast.error('Erro ao gerar relatório geral.');
         }
       });
   }
@@ -153,10 +157,12 @@ export class ReportsComponent implements OnInit, OnDestroy {
           this.customerReport = this.buildCustomerReport(customers);
           this.lastGenerated = new Date();
           this.isLoading = false;
+          this.toast.success('Relatório de clientes gerado com sucesso!');
         },
         error: (error) => {
           console.error('Erro ao gerar relatório de clientes:', error);
           this.isLoading = false;
+          this.toast.error('Erro ao gerar relatório de clientes.');
         }
       });
   }
@@ -797,11 +803,11 @@ export class ReportsComponent implements OnInit, OnDestroy {
             next: (filename) => {
               console.log(`Relatório exportado: ${filename}`);
               // Aqui você implementaria o download real do arquivo
-              alert(`Relatório exportado com sucesso: ${filename}`);
+              this.toast.success(`Relatório exportado com sucesso: ${filename}`);
             },
             error: (error) => {
               console.error('Erro ao exportar relatório:', error);
-              alert('Erro ao exportar relatório');
+              this.toast.error('Erro ao exportar relatório');
             }
           });
       }

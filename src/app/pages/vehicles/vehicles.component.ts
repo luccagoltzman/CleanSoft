@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Vehicle, Customer } from '../../models';
 import { Subject, takeUntil, combineLatest, of, Observable } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 
@@ -95,7 +96,8 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private api: ApiService,
-    private paginationService: PaginationService
+    private paginationService: PaginationService,
+    private toast: ToastrService
   ) {
     this.vehicleForm = this.fb.group({
       customerId: ['', Validators.required],
@@ -307,12 +309,18 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.closeForm();
           this.loadVehicles();
           this.loadStats();
+          this.toast.success('Veículo criado com sucesso!');
+        }, (error) => {
+          this.toast.error('Erro ao criar veículo:', error);
         });
       } else if (this.isEditing && this.selectedVehicle) {
         this.api.update('vehicles', this.selectedVehicle.id, formValue)
           .subscribe(() => {
             this.closeForm();
             this.loadVehicles();
+            this.toast.success('Veículo atualizado com sucesso!');
+          }, (error) => {
+            this.toast.error('Erro ao atualizar veículo:', error);
           });
       }
     }
@@ -332,11 +340,17 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       this.api.update('vehicles', vehicle.id, { isActive: false }).subscribe(() => {
         this.loadVehicles();
         this.loadStats();
+        this.toast.success('Veículo inativado com sucesso!');
+      }, (error) => {
+        this.toast.error('Erro ao inativar veículo:', error);
       });
     } else {
       this.api.update('vehicles', vehicle.id, { isActive: true }).subscribe(() => {
         this.loadVehicles();
         this.loadStats();
+        this.toast.success('Veículo ativado com sucesso!');
+      }, (error) => {
+        this.toast.error('Erro ao ativar veículo:', error);
       });
     }
   }

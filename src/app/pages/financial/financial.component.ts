@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FinancialService } from '../../services/financial.service';
+import { ToastrService } from 'ngx-toastr';
 import {
   AccountPayable,
   AccountReceivable,
@@ -79,7 +80,8 @@ export class FinancialComponent implements OnInit, OnDestroy {
   constructor(
     private financialService: FinancialService,
     private api: ApiService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private toast: ToastrService
   ) {
     this.accountForm = this.fb.group({
       description: ['', Validators.required],
@@ -273,6 +275,9 @@ export class FinancialComponent implements OnInit, OnDestroy {
         if (success) {
           this.loadData();
           this.loadReports();
+          this.toast.success('Conta a Pagar paga com sucesso!');
+        } else {
+          this.toast.error('Erro ao pagar conta a pagar.');
         }
       });
   }
@@ -314,6 +319,9 @@ export class FinancialComponent implements OnInit, OnDestroy {
         if (success) {
           this.loadData();
           this.loadReports();
+          this.toast.success('Conta a Receber recebida com sucesso!');
+        } else {
+          this.toast.error('Erro ao receber conta a receber.');
         }
       });
 
@@ -370,12 +378,20 @@ export class FinancialComponent implements OnInit, OnDestroy {
             this.closeForm();
             this.loadData();
             this.loadReports();
+            this.toast.success('Conta a Pagar criada com sucesso!');
+          }, error => {
+            this.toast.error('Erro ao criar conta a pagar.');
+            console.error(error);
           });
         } else if (this.isEditing && this.selectedAccount) {
           this.api.update('accounts_payable', this.selectedAccount.id, accountData).subscribe(() => {
             this.closeForm();
             this.loadData();
             this.loadReports();
+            this.toast.success('Conta a Pagar atualizada com sucesso!');
+          }, error => {
+            this.toast.error('Erro ao atualizar conta a pagar.');
+            console.error(error);
           });
         }
       } else if (this.activeTab === 'receivables') {
@@ -395,12 +411,20 @@ export class FinancialComponent implements OnInit, OnDestroy {
             this.closeForm();
             this.loadData();
             this.loadReports();
+            this.toast.success('Conta a Receber criada com sucesso!');
+          }, error => {
+            this.toast.error('Erro ao criar conta a receber.');
+            console.error(error);
           });
         } else if (this.isEditing && this.selectedAccount) {
           this.api.update('accounts_receivable', this.selectedAccount.id, accountData).subscribe(() => {
             this.closeForm();
             this.loadData();
             this.loadReports();
+            this.toast.success('Conta a Receber atualizada com sucesso!');
+          }, error => {
+            this.toast.error('Erro ao atualizar conta a receber.');
+            console.error(error);
           });
         }
       }
@@ -428,6 +452,10 @@ export class FinancialComponent implements OnInit, OnDestroy {
           this.closeForm();
           this.loadData();
           this.loadReports();
+          this.toast.success('Movimentação de Caixa criada com sucesso!');
+        }, error => {
+          this.toast.error('Erro ao criar movimentação de caixa.');
+          console.error(error);
         });
       } else if (this.isEditing && this.selectedMovement) {
         // Atualizar movimentação (implementar se necessário)

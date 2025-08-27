@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Product, Supplier, StockMovementReason } from '../../models';
 import {  Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 
@@ -65,7 +66,8 @@ export class ProductsComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private api: ApiService,
-    private paginationService: PaginationService
+    private paginationService: PaginationService,
+    private toast: ToastrService
   ) {
     this.productForm = this.fb.group({
       category: ['', Validators.required],
@@ -290,12 +292,18 @@ export class ProductsComponent implements OnInit, OnDestroy {
           this.closeForm();
           this.loadProducts();
           this.loadStats();
+          this.toast.success('Produto criado com sucesso!');
+        }, error => {
+          this.toast.error('Erro ao criar produto:', error);
         });
       } else if (this.isEditing && this.selectedProduct) {
         this.api.update('products', this.selectedProduct.id, formValue).subscribe(() => {
           this.closeForm();
           this.loadProducts();
           this.loadStats();
+          this.toast.success('Produto atualizado com sucesso!');
+        }, error => {
+          this.toast.error('Erro ao atualizar produto:', error);
         });
       }
     }
@@ -324,6 +332,9 @@ export class ProductsComponent implements OnInit, OnDestroy {
       }).subscribe(() => {
         this.closeSupplierForm();
         this.loadSuppliers();
+        this.toast.success('Fornecedor criado com sucesso!');
+      }, error => {
+        this.toast.error('Erro ao criar fornecedor:', error);
       });
     }
   }
@@ -348,6 +359,9 @@ export class ProductsComponent implements OnInit, OnDestroy {
         this.closeStockMovementForm();
         this.loadProducts();
         this.loadStats();
+        this.toast.success('Movimento de estoque criado com sucesso!');
+      }, error => {
+        this.toast.error('Erro ao criar movimento de estoque:', error);
       });
     }
   }

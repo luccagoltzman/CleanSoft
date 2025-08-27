@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Employee } from '../../models';
 import { of, Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 
@@ -56,7 +57,8 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private apiService: ApiService,
-    private paginationService: PaginationService
+    private paginationService: PaginationService,
+    private toast: ToastrService
   ) {
     this.employeeForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -242,14 +244,22 @@ export class EmployeesComponent implements OnInit, OnDestroy {
         }).subscribe(() => {
           this.closeForm();
           this.loadEmployees();
+          this.toast.success('Funcionário criado com sucesso!');
           // this.loadStats();
+        }, (error) => {
+          this.toast.error('Erro ao criar funcionário.', 'Erro');
+          console.error('Erro ao criar funcionário:', error);
         });
       } else if (this.isEditing && this.selectedEmployee) {
         this.apiService.update('employees', this.selectedEmployee.id, formValue)
           .subscribe(() => {
             this.closeForm();
             this.loadEmployees();
+            this.toast.success('Funcionário atualizado com sucesso!');
             // this.loadStats();
+          }, (error) => {
+            this.toast.error('Erro ao atualizar funcionário.', 'Erro');
+            console.error('Erro ao atualizar funcionário:', error);
           });
       }
     }
@@ -271,6 +281,10 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     }).subscribe(() => {
       this.loadEmployees();
       this.loadStats();
+      this.toast.success('Funcionário demitido com sucesso!');
+    }, (error) => {
+      this.toast.error('Erro ao demitir funcionário.', 'Erro');
+      console.error('Erro ao demitir funcionário:', error);
     });
   }
 
