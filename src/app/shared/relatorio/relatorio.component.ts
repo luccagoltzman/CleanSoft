@@ -179,11 +179,16 @@ export class RelatorioComponent {
   exportPDF() {
     const doc = new jsPDF();
     
-    // Configurações de cores e estilos
-    const primaryColor = [102, 126, 234]; // #667eea
-    const secondaryColor = [118, 75, 162]; // #764ba2
-    const accentColor = [40, 167, 69]; // #28a745
-    const textColor = [73, 80, 87]; // #495057
+    // Configurações de cores e estilos usando a paleta CleanSoft
+    const primaryColor = [33, 150, 243]; // var(--primary-500) #2196f3
+    const primaryDarkColor = [25, 118, 210]; // var(--primary-700) #1976d2
+    const secondaryColor = [118, 75, 162]; // var(--primary-600) #1e88e5
+    const successColor = [76, 175, 80]; // var(--success-500) #4caf50
+    const warningColor = [255, 152, 0]; // var(--warning-500) #ff9800
+    const errorColor = [244, 67, 54]; // var(--error-500) #f44336
+    const textColor = [97, 97, 97]; // var(--neutral-600) #616161
+    const lightBgColor = [250, 250, 250]; // var(--neutral-50) #fafafa
+    const borderColor = [224, 224, 224]; // var(--neutral-300) #e0e0e0
     
     // Cabeçalho do relatório
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -204,7 +209,7 @@ export class RelatorioComponent {
     let yPosition = 60;
     
     // Box de estatísticas
-    doc.setFillColor(248, 249, 250);
+    doc.setFillColor(lightBgColor[0], lightBgColor[1], lightBgColor[2]);
     doc.rect(10, yPosition - 10, 190, 35, 'F');
     doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.rect(10, yPosition - 10, 190, 35, 'S');
@@ -236,12 +241,12 @@ export class RelatorioComponent {
     
     // Informações do cliente top
     if (this.reportStats.topCustomer) {
-      doc.setFillColor(232, 244, 253);
+      doc.setFillColor(232, 244, 253); // var(--primary-50) #e3f2fd
       doc.rect(10, yPosition - 10, 190, 25, 'F');
-      doc.setDrawColor(33, 150, 243);
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.rect(10, yPosition - 10, 190, 25, 'S');
       
-      doc.setTextColor(25, 118, 210);
+      doc.setTextColor(primaryDarkColor[0], primaryDarkColor[1], primaryDarkColor[2]);
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Cliente com Maior Receita', 15, yPosition);
@@ -263,12 +268,12 @@ export class RelatorioComponent {
     if (this.maxValueFilter) activeFilters.push(`Valor máximo: R$ ${this.maxValueFilter}`);
     
     if (activeFilters.length > 0) {
-      doc.setFillColor(255, 248, 225);
+      doc.setFillColor(255, 248, 225); // var(--warning-50) #fff8e1
       doc.rect(10, yPosition - 10, 190, 20, 'F');
-      doc.setDrawColor(255, 193, 7);
+      doc.setDrawColor(warningColor[0], warningColor[1], warningColor[2]);
       doc.rect(10, yPosition - 10, 190, 20, 'S');
       
-      doc.setTextColor(133, 100, 4);
+      doc.setTextColor(133, 100, 4); // var(--warning-700) #f57c00
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text('Filtros Aplicados:', 15, yPosition);
@@ -305,7 +310,7 @@ export class RelatorioComponent {
         
         // Linha zebrada
         if (index % 2 === 0) {
-          doc.setFillColor(250, 251, 252);
+          doc.setFillColor(lightBgColor[0], lightBgColor[1], lightBgColor[2]);
           doc.rect(10, rowY - 3, 190, 8, 'F');
         }
         
@@ -322,11 +327,11 @@ export class RelatorioComponent {
         // Status com cor
         const status = this.getPaymentStatusText(sale.paymentStatus);
         if (sale.paymentStatus === 'paid') {
-          doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+          doc.setTextColor(successColor[0], successColor[1], successColor[2]);
         } else if (sale.paymentStatus === 'pending') {
-          doc.setTextColor(255, 193, 7);
+          doc.setTextColor(warningColor[0], warningColor[1], warningColor[2]);
         } else if (sale.paymentStatus === 'cancelled') {
-          doc.setTextColor(220, 53, 69);
+          doc.setTextColor(errorColor[0], errorColor[1], errorColor[2]);
         }
         doc.text(status, 160, rowY);
         
@@ -338,9 +343,9 @@ export class RelatorioComponent {
     }
     
     // Rodapé
-    doc.setFillColor(248, 249, 250);
+    doc.setFillColor(lightBgColor[0], lightBgColor[1], lightBgColor[2]);
     doc.rect(0, yPosition, 210, 20, 'F');
-    doc.setDrawColor(222, 226, 230);
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
     doc.rect(0, yPosition, 210, 20, 'S');
     
     doc.setTextColor(textColor[0], textColor[1], textColor[2]);
