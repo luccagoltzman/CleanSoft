@@ -39,48 +39,152 @@
 
 .stat-card {
   background: white;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
   box-shadow: var(--shadow);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 15px;
-  transition: transform 0.3s, box-shadow 0.3s;
+  gap: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--primary-color);
+  opacity: 0.7;
 }
 
-.stat-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.3rem;
-  color: white;
+.stat-card.active::before {
+  background: var(--success-color);
+}
+
+.stat-card.warning::before {
+  background: var(--warning-color);
+}
+
+.stat-card.error::before {
+  background: var(--error-color);
+}
+
+.stat-card.revenue::before {
   background: var(--primary-color);
 }
 
-.stat-icon.active { background: var(--success-color); }
-.stat-icon.warning { background: var(--warning-color); }
-.stat-icon.error { background: var(--error-color); }
-.stat-icon.revenue { background: var(--primary-color); }
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  background: linear-gradient(to bottom right, white, var(--background-light));
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  background: var(--primary-color);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3),
+              inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  top: 0;
+  left: -100%;
+  transition: all 0.5s ease;
+  transform: skewX(-15deg);
+}
+
+.stat-card:hover .stat-icon::after {
+  left: 100%;
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.stat-icon.active { 
+  background: linear-gradient(135deg, var(--success-color), #4CAF50);
+}
+
+.stat-icon.warning { 
+  background: linear-gradient(135deg, var(--warning-color), #FFC107);
+}
+
+.stat-icon.error { 
+  background: linear-gradient(135deg, var(--error-color), #f44336);
+}
+
+.stat-icon.revenue { 
+  background: linear-gradient(135deg, var(--primary-color), #2196F3);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
 
 .stat-content h3 {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 5px 0;
+  margin: 0 0 6px 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-content p {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
   color: var(--text-secondary);
   margin: 0;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-card:hover .stat-content h3 {
+  color: var(--primary-color);
+}
+
+.stat-card.active:hover .stat-content h3 {
+  color: var(--success-color);
+}
+
+.stat-card.warning:hover .stat-content h3 {
+  color: var(--warning-color);
+}
+
+.stat-card.error:hover .stat-content h3 {
+  color: var(--error-color);
+}
+
+.stat-card.revenue:hover .stat-content h3 {
+  color: var(--primary-color);
 }
 
 /* Filtros */
