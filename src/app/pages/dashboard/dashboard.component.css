@@ -1,5 +1,6 @@
 .dashboard-container {
   padding: 20px;
+  position: relative;
 }
 
 .dashboard-header {

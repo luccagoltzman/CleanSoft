@@ -5,7 +5,6 @@ import { Customer } from '../../models';
 import { Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 
-
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 import { SpinnerComponent } from '../../shared/spinner/spinner.component';
@@ -36,7 +35,6 @@ export class CustomersComponent implements OnInit, OnDestroy {
   searchTerm = '';
   documentTypeFilter: 'CPF' | 'CNPJ' | 'all' = 'all';
   statusFilter: 'all' | 'active' | 'inactive' = 'all';
-  loading = false;
   customerForm: FormGroup;
   stats = { total: 0, active: 0, inactive: 0, withVehicles: 0 };
 
@@ -65,8 +63,6 @@ export class CustomersComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadCustomers();
     // this.loadStats();
-
-
   }
 
   ngOnDestroy() {
@@ -75,14 +71,17 @@ export class CustomersComponent implements OnInit, OnDestroy {
   }
 
   loadCustomers() {
-    this.loading = true;
     this.api.getAll('clients', { select: '*,vehicles(*)' })
       .pipe(takeUntil(this.destroy$))
-      .subscribe(customers => {
-        this.loading = false;
-        this.customers = customers;
-        this.applyFilters();
-        this.loadStats();
+      .subscribe({
+        next: (customers) => {
+          this.customers = customers;
+          this.applyFilters();
+          this.loadStats();
+        },
+        error: (error) => {
+          console.error('Erro ao carregar clientes:', error);
+        }
       });
   }
 
@@ -96,8 +95,6 @@ export class CustomersComponent implements OnInit, OnDestroy {
       withVehicles: customers.filter(c => c.vehicles && c.vehicles.length > 0).length
     };
   }
-
-
 
   applyFilters() {
     let filtered = [...this.customers];
@@ -188,16 +185,26 @@ export class CustomersComponent implements OnInit, OnDestroy {
         this.api.create('clients', {
           ...formValue,
           isActive: true,
-        }).subscribe(() => {
-          this.closeForm();
-          this.loadCustomers();
-          this.loadStats();
+        }).subscribe({
+          next: () => {
+            this.closeForm();
+            this.loadCustomers();
+            this.loadStats();
+          },
+          error: (error) => {
+            console.error('Erro ao criar cliente:', error);
+          }
         });
       } else if (this.isEditing && this.selectedCustomer) {
         this.api.update('clients', this.selectedCustomer.id, formValue)
-          .subscribe(() => {
-            this.closeForm();
-            this.loadCustomers();
+          .subscribe({
+            next: () => {
+              this.closeForm();
+              this.loadCustomers();
+            },
+            error: (error) => {
+              console.error('Erro ao atualizar cliente:', error);
+            }
           });
       }
     }
@@ -213,14 +220,24 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   toggleCustomerStatus(customer: Customer) {
     if (customer.isActive) {
-      this.api.update('clients', customer.id, { isActive: false }).subscribe(() => {
-        this.loadCustomers();
-        this.loadStats();
+      this.api.update('clients', customer.id, { isActive: false }).subscribe({
+        next: () => {
+          this.loadCustomers();
+          this.loadStats();
+        },
+        error: (error) => {
+          console.error('Erro ao desativar cliente:', error);
+        }
       });
     } else {
-      this.api.update('clients', customer.id, { isActive: true }).subscribe(() => {
-        this.loadCustomers();
-        this.loadStats();
+      this.api.update('clients', customer.id, { isActive: true }).subscribe({
+        next: () => {
+          this.loadCustomers();
+          this.loadStats();
+        },
+        error: (error) => {
+          console.error('Erro ao ativar cliente:', error);
+        }
       });
     }
   }

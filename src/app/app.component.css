@@ -242,6 +242,7 @@
   padding: 20px;
   overflow-y: auto;
   background-color: var(--background-light);
+  position: relative;
 }
 
 /* Responsividade */

@@ -1,21 +1,19 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { finalize, forkJoin, Subject, takeUntil } from 'rxjs';
-import { SpinnerComponent } from '../../shared/spinner/spinner.component';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { Customer, Sale, Service, Product, Vehicle } from '../../models';
 import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, SpinnerComponent],
+  imports: [CommonModule],
   providers: [ApiService],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  loading = false;
   private customers: Customer[] = [];
   stats = {
     totalCustomers: 0,
@@ -41,16 +39,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboardData() {
-    this.loading = true;
-
     forkJoin({
       customers: this.api.getAll('clients', undefined, ['vehicles(*)']),
       sales: this.api.getAll('sales', undefined, ['sale_items(*)']),
       services: this.api.getAll('services'),
       products: this.api.getAll('products')
     }).pipe(
-      takeUntil(this.destroy$),
-      finalize(() => this.loading = false)
+      takeUntil(this.destroy$)
     ).subscribe({
       next: (data: { 
         customers: Customer[],
