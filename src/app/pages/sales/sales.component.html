@@ -2,11 +2,14 @@
 
 
   <!-- Modal do relatório -->
- <button (click)="relatorio.openModal('vendas-por-cliente')">
-  Gerar Relatório de Vendas
-</button>
+  <div class="report-button-container">
+    <button class="btn-report" (click)="relatorio.openModal('vendas-por-cliente')">
+      <i class="fas fa-chart-bar"></i>
+      <span>Relatório de Vendas</span>
+    </button>
+  </div>
 
-<app-relatorio #relatorio></app-relatorio>
+  <app-relatorio #relatorio></app-relatorio>
 
 
   <!-- Header da Página -->

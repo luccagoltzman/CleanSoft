@@ -23,6 +23,25 @@ export class RelatorioComponent {
 
   customerSearch: string = '';
   customerSuggestions: any[] = [];
+  
+  // Estatísticas do relatório
+  reportStats = {
+    totalSales: 0,
+    totalRevenue: 0,
+    averageTicket: 0,
+    topCustomer: '',
+    topCustomerRevenue: 0
+  };
+
+  // Novos filtros para relatório de vendas
+  dateRangeFilter = {
+    startDate: '',
+    endDate: ''
+  };
+  
+  paymentMethodFilter = '';
+  minValueFilter = '';
+  maxValueFilter = '';
 
   constructor(private api: ApiService) {}
 
@@ -59,11 +78,52 @@ export class RelatorioComponent {
   }
 
   applyFilter() {
-    this.filteredData = this.data.filter(s =>
-      (!this.filter.customerId || s.customer_id === this.filter.customerId) &&
-      (!this.filter.paymentStatus || s.paymentStatus === this.filter.paymentStatus) &&
-      (this.filter.customerNames.length === 0 || this.filter.customerNames.includes(s.customer_name))
-    );
+    let filtered = [...this.data];
+    
+    // Filtro por cliente
+    if (this.filter.customerId) {
+      filtered = filtered.filter(s => s.customer_id === this.filter.customerId);
+    }
+    
+    // Filtro por status
+    if (this.filter.paymentStatus) {
+      filtered = filtered.filter(s => s.paymentStatus === this.filter.paymentStatus);
+    }
+    
+    // Filtro por nomes de clientes
+    if (this.filter.customerNames.length > 0) {
+      filtered = filtered.filter(s => this.filter.customerNames.includes(s.customer_name));
+    }
+    
+    // Filtro por data
+    if (this.dateRangeFilter.startDate) {
+      const startDate = new Date(this.dateRangeFilter.startDate);
+      filtered = filtered.filter(s => new Date(s.createdAt) >= startDate);
+    }
+    
+    if (this.dateRangeFilter.endDate) {
+      const endDate = new Date(this.dateRangeFilter.endDate);
+      endDate.setHours(23, 59, 59);
+      filtered = filtered.filter(s => new Date(s.createdAt) <= endDate);
+    }
+    
+    // Filtro por método de pagamento
+    if (this.paymentMethodFilter) {
+      filtered = filtered.filter(s => s.paymentMethod === this.paymentMethodFilter);
+    }
+    
+    // Filtro por valor mínimo
+    if (this.minValueFilter) {
+      filtered = filtered.filter(s => s.total >= parseFloat(this.minValueFilter));
+    }
+    
+    // Filtro por valor máximo
+    if (this.maxValueFilter) {
+      filtered = filtered.filter(s => s.total <= parseFloat(this.maxValueFilter));
+    }
+
+    this.filteredData = filtered;
+    this.calculateReportStats();
   }
 
   updateCustomerSuggestions() {
@@ -108,24 +168,250 @@ export class RelatorioComponent {
 
   exportPDF() {
     const doc = new jsPDF();
-    const rows = this.filteredData.map(s => [
-      s.customer_name,
-      s.phone,
-      s.total,
-      new Date(s.createdAt).toLocaleDateString(),
-      s.paymentStatus
-    ]);
-
-    doc.text('Relatório de Vendas por Cliente', 14, 16);
-    autoTable(doc, {
-      head: [['Cliente', 'Telefone', 'Total', 'Data da Venda', 'Status']],
-      body: rows,
-      startY: 20
+    
+    // Configurações de cores e estilos
+    const primaryColor = [102, 126, 234]; // #667eea
+    const secondaryColor = [118, 75, 162]; // #764ba2
+    const accentColor = [40, 167, 69]; // #28a745
+    const textColor = [73, 80, 87]; // #495057
+    
+    // Cabeçalho do relatório
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    // Título principal
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Relatório de Vendas', 105, 25, { align: 'center' });
+    
+    // Subtítulo
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 105, 35, { align: 'center' });
+    
+    // Estatísticas do relatório
+    let yPosition = 60;
+    
+    // Box de estatísticas
+    doc.setFillColor(248, 249, 250);
+    doc.rect(10, yPosition - 10, 190, 35, 'F');
+    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(10, yPosition - 10, 190, 35, 'S');
+    
+    // Estatísticas em grid
+    const stats = [
+      { label: 'Total de Vendas', value: this.reportStats.totalSales.toString() },
+      { label: 'Receita Total', value: `R$ ${this.reportStats.totalRevenue.toFixed(2)}` },
+      { label: 'Ticket Médio', value: `R$ ${this.reportStats.averageTicket.toFixed(2)}` }
+    ];
+    
+    stats.forEach((stat, index) => {
+      const x = 15 + (index * 63);
+      
+      // Valor
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(stat.value, x, yPosition);
+      
+      // Label
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(stat.label, x, yPosition + 8);
     });
-    doc.save('relatorio.pdf');
+    
+    yPosition += 50;
+    
+    // Informações do cliente top
+    if (this.reportStats.topCustomer) {
+      doc.setFillColor(232, 244, 253);
+      doc.rect(10, yPosition - 10, 190, 25, 'F');
+      doc.setDrawColor(33, 150, 243);
+      doc.rect(10, yPosition - 10, 190, 25, 'S');
+      
+      doc.setTextColor(25, 118, 210);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cliente com Maior Receita', 15, yPosition);
+      
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${this.reportStats.topCustomer} - R$ ${this.reportStats.topCustomerRevenue.toFixed(2)}`, 15, yPosition + 12);
+      
+      yPosition += 40;
+    }
+    
+    // Filtros aplicados
+    const activeFilters = [];
+    if (this.dateRangeFilter.startDate) activeFilters.push(`Data início: ${this.dateRangeFilter.startDate}`);
+    if (this.dateRangeFilter.endDate) activeFilters.push(`Data fim: ${this.dateRangeFilter.endDate}`);
+    if (this.paymentMethodFilter) activeFilters.push(`Método: ${this.getPaymentMethodText(this.paymentMethodFilter)}`);
+    if (this.minValueFilter) activeFilters.push(`Valor mínimo: R$ ${this.minValueFilter}`);
+    if (this.maxValueFilter) activeFilters.push(`Valor máximo: R$ ${this.maxValueFilter}`);
+    
+    if (activeFilters.length > 0) {
+      doc.setFillColor(255, 248, 225);
+      doc.rect(10, yPosition - 10, 190, 20, 'F');
+      doc.setDrawColor(255, 193, 7);
+      doc.rect(10, yPosition - 10, 190, 20, 'S');
+      
+      doc.setTextColor(133, 100, 4);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Filtros Aplicados:', 15, yPosition);
+      
+      doc.setTextColor(133, 100, 4);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(activeFilters.join(' | '), 15, yPosition + 8);
+      
+      yPosition += 35;
+    }
+    
+    // Tabela de vendas
+    if (this.filteredData.length > 0) {
+      // Cabeçalho da tabela
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.rect(10, yPosition - 5, 190, 12, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cliente', 15, yPosition);
+      doc.text('Telefone', 60, yPosition);
+      doc.text('Total', 100, yPosition);
+      doc.text('Data', 130, yPosition);
+      doc.text('Status', 160, yPosition);
+      doc.text('Método', 180, yPosition);
+      
+      yPosition += 15;
+      
+      // Dados da tabela
+      this.filteredData.forEach((sale, index) => {
+        const rowY = yPosition + (index * 8);
+        
+        // Linha zebrada
+        if (index % 2 === 0) {
+          doc.setFillColor(250, 251, 252);
+          doc.rect(10, rowY - 3, 190, 8, 'F');
+        }
+        
+        // Dados
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        
+        doc.text(sale.customer_name || 'N/A', 15, rowY);
+        doc.text(sale.phone || 'N/A', 60, rowY);
+        doc.text(`R$ ${(sale.total || 0).toFixed(2)}`, 100, rowY);
+        doc.text(new Date(sale.createdAt).toLocaleDateString('pt-BR'), 130, rowY);
+        
+        // Status com cor
+        const status = this.getPaymentStatusText(sale.paymentStatus);
+        if (sale.paymentStatus === 'paid') {
+          doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+        } else if (sale.paymentStatus === 'pending') {
+          doc.setTextColor(255, 193, 7);
+        } else if (sale.paymentStatus === 'cancelled') {
+          doc.setTextColor(220, 53, 69);
+        }
+        doc.text(status, 160, rowY);
+        
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.text(this.getPaymentMethodText(sale.paymentMethod), 180, rowY);
+      });
+      
+      yPosition += (this.filteredData.length * 8) + 20;
+    }
+    
+    // Rodapé
+    doc.setFillColor(248, 249, 250);
+    doc.rect(0, yPosition, 210, 20, 'F');
+    doc.setDrawColor(222, 226, 230);
+    doc.rect(0, yPosition, 210, 20, 'S');
+    
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total de registros: ${this.filteredData.length}`, 15, yPosition + 12);
+    doc.text('CleanSoft - Sistema de Gestão', 105, yPosition + 12, { align: 'center' });
+    
+    // Salvar o PDF
+    doc.save(`relatorio-vendas-${new Date().toISOString().split('T')[0]}.pdf`);
   }
 
   closeModal() {
     this.showModal = false;
+  }
+
+  onFilterChange() {
+    this.applyFilter();
+  }
+
+  getPaymentStatusText(status: string): string {
+    switch (status) {
+      case 'paid': return 'Pago';
+      case 'pending': return 'Pendente';
+      case 'cancelled': return 'Cancelado';
+      case 'refunded': return 'Reembolsado';
+      default: return status;
+    }
+  }
+
+  getPaymentMethodText(method: string): string {
+    switch (method) {
+      case 'cash': return 'Dinheiro';
+      case 'credit_card': return 'Cartão de Crédito';
+      case 'debit_card': return 'Cartão de Débito';
+      case 'pix': return 'PIX';
+      case 'bank_transfer': return 'Transferência';
+      case 'check': return 'Cheque';
+      case 'installment': return 'Parcelado';
+      default: return method;
+    }
+  }
+
+  calculateReportStats() {
+    if (this.filteredData.length === 0) {
+      this.reportStats = {
+        totalSales: 0,
+        totalRevenue: 0,
+        averageTicket: 0,
+        topCustomer: '',
+        topCustomerRevenue: 0
+      };
+      return;
+    }
+
+    const totalSales = this.filteredData.length;
+    const totalRevenue = this.filteredData.reduce((sum, s) => sum + (s.total || 0), 0);
+    const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+    // Encontrar cliente com maior receita
+    const customerRevenue: { [key: string]: number } = {};
+    this.filteredData.forEach(sale => {
+      const customerName = sale.customer_name;
+      customerRevenue[customerName] = (customerRevenue[customerName] || 0) + (sale.total || 0);
+    });
+
+    let topCustomer = '';
+    let topCustomerRevenue = 0;
+    Object.entries(customerRevenue).forEach(([name, revenue]) => {
+      if (revenue > topCustomerRevenue) {
+        topCustomer = name;
+        topCustomerRevenue = revenue;
+      }
+    });
+
+    this.reportStats = {
+      totalSales,
+      totalRevenue,
+      averageTicket,
+      topCustomer,
+      topCustomerRevenue
+    };
   }
 }
