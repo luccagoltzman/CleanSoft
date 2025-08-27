@@ -313,6 +313,31 @@
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-content {
@@ -401,10 +426,36 @@
   border: 2px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.95rem;
-  transition: border-color 0.3s;
+  transition: all 0.3s ease;
   font-family: inherit;
   height: 40px;
   box-sizing: border-box;
+  cursor: pointer;
+}
+
+.form-input:hover,
+.form-select:hover,
+.form-textarea:hover {
+  cursor: text;
+}
+
+.form-select:hover {
+  cursor: pointer;
+}
+
+.btn-icon,
+.btn-primary,
+.btn-secondary {
+  cursor: pointer;
+}
+
+.btn-disabled {
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+.item-total {
+  cursor: default;
 }
 
 .item-grid .form-input,
@@ -415,6 +466,29 @@
   line-height: 1.2;
   display: flex;
   align-items: center;
+  transition: all 0.2s ease;
+}
+
+.item-grid .form-input:hover,
+.item-grid .form-select:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.item-form {
+  transition: all 0.3s ease;
+}
+
+.item-form:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.btn-icon.btn-sm:hover {
+  transform: scale(1.15);
+  background-color: var(--error-color);
+  color: white;
 }
 
 .item-grid .form-select {
@@ -463,6 +537,25 @@
 .form-textarea:focus {
   outline: none;
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+  transform: translateY(-1px);
+}
+
+.item-grid .form-input:focus,
+.item-grid .form-select:focus {
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+}
+
+.btn-primary:focus,
+.btn-secondary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
+}
+
+.btn-icon:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
 }
 
 .error-message {
@@ -477,6 +570,20 @@
   padding: 20px;
   background: var(--background-light);
   border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.items-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.section-header button {
+  transition: all 0.3s ease;
+}
+
+.section-header button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .section-header {
