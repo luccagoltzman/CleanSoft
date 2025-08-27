@@ -1,11 +1,28 @@
 <div class="modal-overlay" *ngIf="showModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Relatório de Vendas por Cliente</h3>
+      <h3>Relatório de Vendas</h3>
       <button class="close-btn" (click)="closeModal()">&times;</button>
     </div>
 
+    <!-- Estatísticas do Relatório -->
+    <div class="report-stats" *ngIf="!isLoading">
+      <div class="stat-item">
+        <div class="stat-value">{{ reportStats.totalSales }}</div>
+        <div class="stat-label">Total de Vendas</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">R$ {{ reportStats.totalRevenue.toFixed(2) }}</div>
+        <div class="stat-label">Receita Total</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">R$ {{ reportStats.averageTicket.toFixed(2) }}</div>
+        <div class="stat-label">Ticket Médio</div>
+      </div>
+    </div>
+
     <div class="modal-filters">
+      <!-- Filtros existentes -->
       <div class="filter-group">
         <label>Cliente:</label>
         <input
@@ -28,38 +45,118 @@
 
       <div class="filter-group">
         <label>Status:</label>
-        <select [(ngModel)]="filter.paymentStatus" (change)="applyFilter()">
+        <select [(ngModel)]="filter.paymentStatus" (change)="onFilterChange()">
           <option value="">Todos</option>
           <option value="paid">Pago</option>
           <option value="pending">Pendente</option>
+          <option value="cancelled">Cancelado</option>
+          <option value="refunded">Reembolsado</option>
         </select>
+      </div>
+
+      <!-- Novos filtros -->
+      <div class="filter-group">
+        <label>Data Início:</label>
+        <input 
+          type="date" 
+          [(ngModel)]="dateRangeFilter.startDate" 
+          (change)="onFilterChange()"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Data Fim:</label>
+        <input 
+          type="date" 
+          [(ngModel)]="dateRangeFilter.endDate" 
+          (change)="onFilterChange()"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Método de Pagamento:</label>
+        <select [(ngModel)]="paymentMethodFilter" (change)="onFilterChange()">
+          <option value="">Todos</option>
+          <option value="cash">Dinheiro</option>
+          <option value="credit_card">Cartão de Crédito</option>
+          <option value="debit_card">Cartão de Débito</option>
+          <option value="pix">PIX</option>
+          <option value="bank_transfer">Transferência</option>
+          <option value="check">Cheque</option>
+          <option value="installment">Parcelado</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Valor Mínimo:</label>
+        <input 
+          type="number" 
+          placeholder="R$ 0,00" 
+          [(ngModel)]="minValueFilter" 
+          (change)="onFilterChange()"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Valor Máximo:</label>
+        <input 
+          type="number" 
+          placeholder="R$ 0,00" 
+          [(ngModel)]="maxValueFilter" 
+          (change)="onFilterChange()"
+        />
       </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Cliente</th>
-          <th>Telefone</th>
-          <th>Total</th>
-          <th>Data da Venda</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let sale of filteredData">
-          <td>{{ sale.customer_name }}</td>
-          <td>{{ sale.phone }}</td>
-          <td>{{ sale.total }}</td>
-          <td>{{ sale.createdAt | date }}</td>
-          <td>{{ sale.paymentStatus }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Loading -->
+    <div class="loading-container" *ngIf="isLoading">
+      <div class="loading-spinner"></div>
+      <p>Carregando dados...</p>
+    </div>
+
+    <!-- Tabela de resultados -->
+    <div class="table-container" *ngIf="!isLoading">
+      <div class="results-info">
+        <span>{{ filteredData.length }} vendas encontradas</span>
+      </div>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Telefone</th>
+            <th>Total</th>
+            <th>Data da Venda</th>
+            <th>Status</th>
+            <th>Método</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sale of filteredData">
+            <td>{{ sale.customer_name }}</td>
+            <td>{{ sale.phone }}</td>
+            <td class="amount">R$ {{ sale.total.toFixed(2) }}</td>
+            <td>{{ sale.createdAt | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <span class="status-badge" [class]="'status-' + sale.paymentStatus">
+                {{ getPaymentStatusText(sale.paymentStatus) }}
+              </span>
+            </td>
+            <td>{{ getPaymentMethodText(sale.paymentMethod) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div class="modal-buttons">
-      <button (click)="exportCSV()">Exportar CSV</button>
-      <button (click)="exportPDF()">Exportar PDF</button>
+      <button class="btn-export-csv" (click)="exportCSV()">
+        <i class="fas fa-file-csv"></i>
+        Exportar CSV
+      </button>
+      <button class="btn-export-pdf" (click)="exportPDF()">
+        <i class="fas fa-file-pdf"></i>
+        Exportar PDF
+      </button>
     </div>
   </div>
 </div>

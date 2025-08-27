@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Customer } from '../../models';
 import { Subject, takeUntil } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { ToastrService } from 'ngx-toastr';
 
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
@@ -48,7 +49,8 @@ export class CustomersComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private api: ApiService,
-    private paginationService: PaginationService
+    private paginationService: PaginationService,
+    private toast: ToastrService
   ) {
     this.customerForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -190,9 +192,11 @@ export class CustomersComponent implements OnInit, OnDestroy {
             this.closeForm();
             this.loadCustomers();
             this.loadStats();
+            this.toast.success('Cliente criado com sucesso!');
           },
           error: (error) => {
             console.error('Erro ao criar cliente:', error);
+            this.toast.error('Erro ao criar cliente.');
           }
         });
       } else if (this.isEditing && this.selectedCustomer) {
@@ -201,9 +205,12 @@ export class CustomersComponent implements OnInit, OnDestroy {
             next: () => {
               this.closeForm();
               this.loadCustomers();
+              this.loadStats();
+              this.toast.success('Cliente atualizado com sucesso!');
             },
             error: (error) => {
               console.error('Erro ao atualizar cliente:', error);
+              this.toast.error('Erro ao atualizar cliente.');
             }
           });
       }
@@ -224,9 +231,11 @@ export class CustomersComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadCustomers();
           this.loadStats();
+          this.toast.success('Cliente desativado com sucesso!');
         },
         error: (error) => {
           console.error('Erro ao desativar cliente:', error);
+          this.toast.error('Erro ao desativar cliente.');
         }
       });
     } else {
@@ -234,9 +243,11 @@ export class CustomersComponent implements OnInit, OnDestroy {
         next: () => {
           this.loadCustomers();
           this.loadStats();
+          this.toast.success('Cliente ativado com sucesso!');
         },
         error: (error) => {
           console.error('Erro ao ativar cliente:', error);
+          this.toast.error('Erro ao ativar cliente.');
         }
       });
     }
