@@ -720,6 +720,22 @@
               <span class="stat-label">Contas Pagas:</span>
               <span class="stat-value">{{ selectedCardDetails.summary.payablesCount }}</span>
             </div>
+            <div *ngIf="selectedCardDetails.summary.salesCount" class="stat-item">
+              <span class="stat-label">Vendas:</span>
+              <span class="stat-value">{{ selectedCardDetails.summary.salesCount }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.servicesCount" class="stat-item">
+              <span class="stat-label">Serviços:</span>
+              <span class="stat-value">{{ selectedCardDetails.summary.servicesCount }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.salesTotal" class="stat-item">
+              <span class="stat-label">Total Vendas:</span>
+              <span class="stat-value positive">{{ formatCurrency(selectedCardDetails.summary.salesTotal) }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.servicesTotal" class="stat-item">
+              <span class="stat-label">Total Serviços:</span>
+              <span class="stat-value positive">{{ formatCurrency(selectedCardDetails.summary.servicesTotal) }}</span>
+            </div>
             <div *ngIf="selectedCardDetails.summary.margin !== undefined" class="stat-item">
               <span class="stat-label">Margem:</span>
               <span class="stat-value" [class]="selectedCardDetails.summary.margin >= 0 ? 'positive' : 'negative'">
@@ -743,6 +759,7 @@
                   <th *ngIf="selectedCardType.includes('payables')">Fornecedor</th>
                   <th *ngIf="selectedCardType.includes('receivables')">Cliente</th>
                   <th *ngIf="selectedCardType.includes('income') || selectedCardType.includes('expense')">Tipo/Categoria</th>
+                  <th *ngIf="selectedCardType.includes('income')">Método Pagamento</th>
                   <th *ngIf="selectedCardType.includes('overdue')">Dias em Atraso</th>
                 </tr>
               </thead>
@@ -767,6 +784,12 @@
                       <span class="item-type">{{ item.type }}</span>
                       <span *ngIf="item.category" class="item-category">{{ item.category }}</span>
                     </div>
+                  </td>
+                  <td *ngIf="selectedCardType.includes('income')">
+                    <span *ngIf="item.paymentMethod" class="payment-method">
+                      {{ item.paymentMethod }}
+                    </span>
+                    <span *ngIf="!item.paymentMethod">-</span>
                   </td>
                   <td *ngIf="selectedCardType.includes('overdue') && item.daysOverdue" class="days-overdue">
                     {{ item.daysOverdue }} dias

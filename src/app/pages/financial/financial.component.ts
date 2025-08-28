@@ -13,9 +13,13 @@ import {
   CashFlowReport,
   FinancialSearchParams
 } from '../../models';
-import { forkJoin, Subject, takeUntil, timer } from 'rxjs';
+import { forkJoin, Subject, takeUntil, timer, of } from 'rxjs';
+import { catchError, take, map } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
-import { StatsSkeletonComponent } from '../../shared/components';
+import { SaleService } from '../../services/sale.service';
+import { ServiceService } from '../../services/service.service';
+import { StatsSkeletonComponent } from '../../shared/components/skeleton/stats-skeleton.component';
+import { Sale, Service, PaymentStatus } from '../../models';
 
 @Component({
   selector: 'app-financial',
@@ -29,6 +33,8 @@ export class FinancialComponent implements OnInit, OnDestroy {
   accountsPayable: AccountPayable[] = [];
   accountsReceivable: AccountReceivable[] = [];
   cashMovements: CashMovement[] = [];
+  sales: Sale[] = [];
+  services: Service[] = [];
   customers: any[] = [];
   suppliers: any[] = [];
 
@@ -37,7 +43,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
   selectedAccount: AccountPayable | AccountReceivable | null = null;
   selectedMovement: CashMovement | null = null;
   showForm = false;
-  isLoading = false;
+  isLoading = true;  // Inicia como true para mostrar skeleton
   isEditing = false;
   isCreating = false;
   
@@ -87,6 +93,8 @@ export class FinancialComponent implements OnInit, OnDestroy {
   constructor(
     private financialService: FinancialService,
     private api: ApiService,
+    private saleService: SaleService,
+    private serviceService: ServiceService,
     private fb: FormBuilder,
     private toast: ToastrService,
     private cdr: ChangeDetectorRef
@@ -127,23 +135,81 @@ export class FinancialComponent implements OnInit, OnDestroy {
   loadData() {
     this.isLoading = true;
     forkJoin({
-      payables: this.api.getAll('accounts_payable'),
-      receivables: this.api.getAll('accounts_receivable'),
-      movements: this.api.getAll('cash_movements')
+      payables: this.api.getAll('accounts_payable').pipe(
+        catchError(error => of([]))
+      ),
+      receivables: this.api.getAll('accounts_receivable').pipe(
+        catchError(error => of([]))
+      ),
+      movements: this.api.getAll('cash_movements').pipe(
+        catchError(error => of([]))
+      ),
+      sales: this.api.getAll('sales', undefined, ['sale_items(*)']).pipe(
+        map((sales: any[]) => sales.map(sale => ({
+          id: sale.id,
+          customerId: sale.customerId,
+          vehicleId: sale.vehicleId,
+          subtotal: sale.subtotal || 0,
+          discount: sale.discount || 0,
+          total: sale.total || 0,
+          paymentMethod: sale.paymentMethod,
+          paymentStatus: sale.paymentStatus,
+          notes: sale.notes,
+          date: sale.date ? new Date(sale.date) : new Date(),
+          createdAt: sale.createdAt,
+          updatedAt: sale.updatedAt,
+          createdBy: sale.createdBy || 1,
+          dueDate: sale.dueDate,
+          items: sale.sale_items ? sale.sale_items.map((item: any) => ({
+            id: item.id,
+            saleId: item.saleId,
+            type: item.type,
+            productId: item.productId,
+            serviceId: item.serviceId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            discount: item.discount || 0,
+            notes: item.notes
+          })) : []
+        }))),
+        catchError(error => of([]))
+      ),
+      services: this.serviceService.getServices().pipe(
+        take(1),
+        catchError(error => of([]))
+      )
     })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(({ payables, receivables, movements }) => {
-        this.accountsPayable = payables.filter((item: any) => item.type === 'payables');
-        this.accountsReceivable = receivables.filter((item: any) => item.type === 'receivables');
-        this.cashMovements = movements;
+      .subscribe({
+        next: ({ payables, receivables, movements, sales, services }) => {
 
-        this.updateStats();
-        this.loadReports();
-        // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
-        timer(1500).subscribe(() => {
+          
+          this.accountsPayable = payables.filter((item: any) => item.type === 'payables');
+          this.accountsReceivable = receivables.filter((item: any) => item.type === 'receivables');
+          this.cashMovements = movements;
+          this.sales = sales;
+          this.services = services;
+
+          this.updateStats();
+          
+          // Define loading como false após processar os dados
+          this.isLoading = false;
+          
+          // Força a detecção de mudanças
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+          
+          // Carrega relatórios em background
+          setTimeout(() => {
+            this.loadReports();
+          }, 100);
+        },
+        error: (error) => {
+          console.error('Erro ao carregar dados financeiros:', error);
           this.isLoading = false;
           this.cdr.detectChanges();
-        });
+          this.toast.error('Erro ao carregar dados financeiros');
+        }
       });
   }
 
@@ -165,31 +231,42 @@ export class FinancialComponent implements OnInit, OnDestroy {
   }
 
   loadReports() {
-    const endDate = new Date();
-    const startDate = new Date();
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
 
-    if (this.reportPeriod === 'daily') {
-      startDate.setDate(endDate.getDate() - 7);
-    } else if (this.reportPeriod === 'weekly') {
-      startDate.setDate(endDate.getDate() - 30);
-    } else {
-      startDate.setMonth(endDate.getMonth() - 12);
+      if (this.reportPeriod === 'daily') {
+        startDate.setDate(endDate.getDate() - 7);
+      } else if (this.reportPeriod === 'weekly') {
+        startDate.setDate(endDate.getDate() - 30);
+      } else {
+        startDate.setMonth(endDate.getMonth() - 12);
+      }
+
+      this.financialService.getFinancialReport(this.accountsPayable, this.accountsReceivable, this.cashMovements, this.reportPeriod, startDate, endDate)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (report) => {
+            this.financialReport = report;
+          },
+          error: (error) => {
+            console.error('Erro ao carregar relatório financeiro:', error);
+          }
+        });
+
+      this.financialService.getCashFlowReport(this.accountsPayable, this.accountsReceivable, this.cashMovements, this.reportPeriod, startDate, endDate)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (report) => {
+            this.cashFlowReport = report;
+          },
+          error: (error) => {
+            console.error('Erro ao carregar relatório de fluxo de caixa:', error);
+          }
+        });
+    } catch (error) {
+      console.error('Erro no loadReports:', error);
     }
-
-    this.financialService.getFinancialReport(this.accountsPayable, this.accountsReceivable, this.cashMovements, this.reportPeriod, startDate, endDate)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(report => {
-        this.financialReport = report;
-      });
-
-    this.financialService.getCashFlowReport(this.accountsPayable, this.accountsReceivable, this.cashMovements, this.reportPeriod, startDate, endDate)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(report => {
-        this.cashFlowReport = report;
-      });
-
-
-    console.log(this.financialReport);
   }
 
   formatDate(date: any): string {
@@ -220,7 +297,7 @@ export class FinancialComponent implements OnInit, OnDestroy {
       .filter(r => r.status === 'pending' && new Date(r.dueDate) < today)
       .reduce((sum, r) => sum + r.amount, 0);
 
-    // Fluxo de Caixa
+    // Fluxo de Caixa - incluindo vendas e serviços
     const paidReceivables = this.accountsReceivable
       .filter(r => r.status === 'paid')
       .reduce((sum, r) => sum + r.amount, 0);
@@ -237,7 +314,18 @@ export class FinancialComponent implements OnInit, OnDestroy {
       .filter(m => m.type === 'expense')
       .reduce((sum, m) => sum + m.amount, 0);
 
-    this.stats.totalIncome = paidReceivables + incomeFromMovements;
+    // Receitas de vendas pagas
+    const incomeFromSales = this.sales
+      .filter(s => s.paymentStatus === PaymentStatus.PAID)
+      .reduce((sum, s) => sum + s.total, 0);
+
+    // Receitas de serviços (assumindo que serviços têm paymentStatus e basePrice)
+    const incomeFromServices = this.services
+      .filter(s => s.paymentStatus === PaymentStatus.PAID && s.basePrice)
+      .reduce((sum, s) => sum + s.basePrice, 0);
+
+    // Total de receitas incluindo vendas e serviços
+    this.stats.totalIncome = paidReceivables + incomeFromMovements + incomeFromSales + incomeFromServices;
     this.stats.totalExpense = paidPayables + expenseFromMovements;
     this.stats.netCashFlow = this.stats.totalIncome - this.stats.totalExpense;
 
@@ -728,6 +816,9 @@ export class FinancialComponent implements OnInit, OnDestroy {
       case 'total-income':
         const incomeMovements = this.cashMovements.filter(m => m.type === 'income');
         const paidReceivables = this.accountsReceivable.filter(r => r.status === 'paid');
+        const paidSales = this.sales.filter(s => s.paymentStatus === PaymentStatus.PAID);
+        const paidServices = this.services.filter(s => s.paymentStatus === PaymentStatus.PAID && s.basePrice);
+        
         return {
           title: 'Receitas Totais',
           totalValue: this.stats.totalIncome,
@@ -745,13 +836,33 @@ export class FinancialComponent implements OnInit, OnDestroy {
               date: account.dueDate,
               customer: account.customerId,
               type: 'Conta Recebida'
+            })),
+            ...paidSales.map(sale => ({
+              description: `Venda #${sale.id} - ${sale.customer?.name || 'Cliente ' + sale.customerId}`,
+              amount: sale.total,
+              date: sale.date,
+              customer: sale.customer?.name || sale.customerId,
+              type: 'Venda',
+              paymentMethod: this.getPaymentMethodText(sale.paymentMethod)
+            })),
+            ...paidServices.map(service => ({
+              description: service.name,
+              amount: service.basePrice,
+              date: service.scheduledDate || service.updatedAt,
+              customer: service.customerId,
+              type: 'Serviço',
+              category: service.category
             }))
           ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
           summary: {
             movementsCount: incomeMovements.length,
             receivablesCount: paidReceivables.length,
+            salesCount: paidSales.length,
+            servicesCount: paidServices.length,
             movementsTotal: incomeMovements.reduce((sum, m) => sum + m.amount, 0),
-            receivablesTotal: paidReceivables.reduce((sum, r) => sum + r.amount, 0)
+            receivablesTotal: paidReceivables.reduce((sum, r) => sum + r.amount, 0),
+            salesTotal: paidSales.reduce((sum, s) => sum + s.total, 0),
+            servicesTotal: paidServices.reduce((sum, s) => sum + s.basePrice, 0)
           }
         };
 
@@ -786,14 +897,40 @@ export class FinancialComponent implements OnInit, OnDestroy {
         };
 
       case 'net-cash-flow':
+        const incomeFromSales = this.sales
+          .filter(s => s.paymentStatus === PaymentStatus.PAID)
+          .reduce((sum, s) => sum + s.total, 0);
+        
+        const incomeFromServices = this.services
+          .filter(s => s.paymentStatus === PaymentStatus.PAID && s.basePrice)
+          .reduce((sum, s) => sum + s.basePrice, 0);
+
         return {
           title: 'Fluxo de Caixa Líquido',
           totalValue: this.stats.netCashFlow,
           items: [
             {
-              description: 'Total de Receitas',
-              amount: this.stats.totalIncome,
-              type: 'Receita',
+              description: 'Movimentações de Receita',
+              amount: this.cashMovements.filter(m => m.type === 'income').reduce((sum, m) => sum + m.amount, 0),
+              type: 'Movimentação',
+              isPositive: true
+            },
+            {
+              description: 'Contas Recebidas',
+              amount: this.accountsReceivable.filter(r => r.status === 'paid').reduce((sum, r) => sum + r.amount, 0),
+              type: 'Conta Recebida',
+              isPositive: true
+            },
+            {
+              description: 'Vendas Realizadas',
+              amount: incomeFromSales,
+              type: 'Venda',
+              isPositive: true
+            },
+            {
+              description: 'Serviços Prestados',
+              amount: incomeFromServices,
+              type: 'Serviço',
               isPositive: true
             },
             {
@@ -805,7 +942,9 @@ export class FinancialComponent implements OnInit, OnDestroy {
           ],
           summary: {
             isPositive: this.stats.netCashFlow >= 0,
-            margin: this.stats.totalIncome > 0 ? ((this.stats.netCashFlow / this.stats.totalIncome) * 100) : 0
+            margin: this.stats.totalIncome > 0 ? ((this.stats.netCashFlow / this.stats.totalIncome) * 100) : 0,
+            salesCount: this.sales.filter(s => s.paymentStatus === PaymentStatus.PAID).length,
+            servicesCount: this.services.filter(s => s.paymentStatus === PaymentStatus.PAID).length
           }
         };
 

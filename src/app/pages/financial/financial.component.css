@@ -1326,6 +1326,17 @@
   text-align: center;
 }
 
+.payment-method {
+  background: var(--primary-color);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .cash-flow-breakdown {
   margin-top: 30px;
 }
