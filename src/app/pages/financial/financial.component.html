@@ -56,7 +56,7 @@
         <div class="stats-group">
           <h4>Contas a Pagar</h4>
           <div class="stats-row">
-            <div class="stat-card">
+            <div class="stat-card clickable" (click)="openCardDetails('pending-payables')">
               <div class="stat-icon warning">
                 <i class="fas fa-credit-card"></i>
               </div>
@@ -66,7 +66,7 @@
               </div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card clickable" (click)="openCardDetails('overdue-payables')">
               <div class="stat-icon danger">
                 <i class="fas fa-exclamation-triangle"></i>
               </div>
@@ -82,7 +82,7 @@
         <div class="stats-group">
           <h4>Contas a Receber</h4>
           <div class="stats-row">
-            <div class="stat-card">
+            <div class="stat-card clickable" (click)="openCardDetails('pending-receivables')">
               <div class="stat-icon success">
                 <i class="fas fa-money-bill-wave"></i>
               </div>
@@ -92,7 +92,7 @@
               </div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card clickable" (click)="openCardDetails('overdue-receivables')">
               <div class="stat-icon danger">
                 <i class="fas fa-clock"></i>
               </div>
@@ -108,7 +108,7 @@
         <div class="stats-group">
           <h4>Movimentos / Fluxo</h4>
           <div class="stats-row">
-            <div class="stat-card">
+            <div class="stat-card clickable" (click)="openCardDetails('total-income')">
               <div class="stat-icon success">
                 <i class="fas fa-arrow-up"></i>
               </div>
@@ -118,7 +118,7 @@
               </div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card clickable" (click)="openCardDetails('total-expense')">
               <div class="stat-icon danger">
                 <i class="fas fa-arrow-down"></i>
               </div>
@@ -128,7 +128,7 @@
               </div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card clickable" (click)="openCardDetails('net-cash-flow')">
               <div class="stat-icon" [class]="stats.netCashFlow >= 0 ? 'success' : 'danger'">
                 <i class="fas fa-chart-line"></i>
               </div>
@@ -665,6 +665,147 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Overlay de Detalhes dos Cards -->
+  <div *ngIf="showDetailsOverlay" class="details-overlay">
+    <div class="details-modal">
+      <div class="details-header">
+        <h2>{{ selectedCardDetails?.title }}</h2>
+        <button class="btn-close" (click)="closeDetailsOverlay()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="details-content">
+        <!-- Valor Total -->
+        <div class="details-summary">
+          <div class="summary-card">
+            <div class="summary-value">
+              <h3 [class]="selectedCardType.includes('cash-flow') && selectedCardDetails?.totalValue < 0 ? 'negative' : 'positive'">
+                {{ formatCurrency(selectedCardDetails?.totalValue) }}
+              </h3>
+              <p>Valor Total</p>
+            </div>
+          </div>
+
+          <!-- Estatísticas Adicionais -->
+          <div *ngIf="selectedCardDetails?.summary" class="summary-stats">
+            <div *ngIf="selectedCardDetails.summary.totalCount" class="stat-item">
+              <span class="stat-label">Total de Itens:</span>
+              <span class="stat-value">{{ selectedCardDetails.summary.totalCount }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.overdueCount !== undefined" class="stat-item">
+              <span class="stat-label">Vencidos:</span>
+              <span class="stat-value danger">{{ selectedCardDetails.summary.overdueCount }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.thisMonthCount" class="stat-item">
+              <span class="stat-label">Este Mês:</span>
+              <span class="stat-value">{{ selectedCardDetails.summary.thisMonthCount }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.averageDaysOverdue" class="stat-item">
+              <span class="stat-label">Média de Dias em Atraso:</span>
+              <span class="stat-value danger">{{ selectedCardDetails.summary.averageDaysOverdue }} dias</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.movementsCount" class="stat-item">
+              <span class="stat-label">Movimentações:</span>
+              <span class="stat-value">{{ selectedCardDetails.summary.movementsCount }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.receivablesCount" class="stat-item">
+              <span class="stat-label">Contas Recebidas:</span>
+              <span class="stat-value">{{ selectedCardDetails.summary.receivablesCount }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.payablesCount" class="stat-item">
+              <span class="stat-label">Contas Pagas:</span>
+              <span class="stat-value">{{ selectedCardDetails.summary.payablesCount }}</span>
+            </div>
+            <div *ngIf="selectedCardDetails.summary.margin !== undefined" class="stat-item">
+              <span class="stat-label">Margem:</span>
+              <span class="stat-value" [class]="selectedCardDetails.summary.margin >= 0 ? 'positive' : 'negative'">
+                {{ selectedCardDetails.summary.margin.toFixed(1) }}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Itens Detalhados -->
+        <div *ngIf="selectedCardDetails?.items && selectedCardDetails.items.length > 0" class="details-list">
+          <h4>Detalhamento</h4>
+          <div class="details-table-container">
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Valor</th>
+                  <th *ngIf="selectedCardType.includes('payables') || selectedCardType.includes('receivables')">Vencimento</th>
+                  <th *ngIf="selectedCardType.includes('income') || selectedCardType.includes('expense')">Data</th>
+                  <th *ngIf="selectedCardType.includes('payables')">Fornecedor</th>
+                  <th *ngIf="selectedCardType.includes('receivables')">Cliente</th>
+                  <th *ngIf="selectedCardType.includes('income') || selectedCardType.includes('expense')">Tipo/Categoria</th>
+                  <th *ngIf="selectedCardType.includes('overdue')">Dias em Atraso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of selectedCardDetails.items" 
+                    [class.overdue-row]="item.isOverdue">
+                  <td>{{ item.description }}</td>
+                  <td class="amount-cell" [class]="item.isPositive === false ? 'negative' : 'positive'">
+                    {{ formatCurrency(item.amount) }}
+                  </td>
+                  <td *ngIf="selectedCardType.includes('payables') || selectedCardType.includes('receivables')">
+                    {{ formatDate(item.dueDate) }}
+                    <span *ngIf="item.isOverdue" class="overdue-badge">VENCIDO</span>
+                  </td>
+                  <td *ngIf="selectedCardType.includes('income') || selectedCardType.includes('expense')">
+                    {{ formatDate(item.date) }}
+                  </td>
+                  <td *ngIf="selectedCardType.includes('payables')">{{ item.supplier || '-' }}</td>
+                  <td *ngIf="selectedCardType.includes('receivables')">{{ item.customer || '-' }}</td>
+                  <td *ngIf="selectedCardType.includes('income') || selectedCardType.includes('expense')">
+                    <div class="type-info">
+                      <span class="item-type">{{ item.type }}</span>
+                      <span *ngIf="item.category" class="item-category">{{ item.category }}</span>
+                    </div>
+                  </td>
+                  <td *ngIf="selectedCardType.includes('overdue') && item.daysOverdue" class="days-overdue">
+                    {{ item.daysOverdue }} dias
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Caso especial para Fluxo de Caixa -->
+        <div *ngIf="selectedCardType === 'net-cash-flow'" class="cash-flow-breakdown">
+          <h4>Composição do Fluxo de Caixa</h4>
+          <div class="flow-items">
+            <div *ngFor="let item of selectedCardDetails.items" class="flow-item">
+              <div class="flow-info">
+                <span class="flow-description">{{ item.description }}</span>
+                <span class="flow-type">{{ item.type }}</span>
+              </div>
+              <div class="flow-amount" [class]="item.isPositive ? 'positive' : 'negative'">
+                {{ formatCurrency(item.amount) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensagem quando não há itens -->
+        <div *ngIf="!selectedCardDetails?.items || selectedCardDetails.items.length === 0" class="no-items">
+          <i class="fas fa-info-circle"></i>
+          <p>Nenhum item encontrado para este período.</p>
+        </div>
+      </div>
+
+      <div class="details-footer">
+        <button class="btn-secondary" (click)="closeDetailsOverlay()">
+          <i class="fas fa-times"></i>
+          Fechar
+        </button>
+      </div>
     </div>
   </div>
 </div>

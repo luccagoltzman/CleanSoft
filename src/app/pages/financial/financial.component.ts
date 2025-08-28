@@ -40,6 +40,11 @@ export class FinancialComponent implements OnInit, OnDestroy {
   isLoading = false;
   isEditing = false;
   isCreating = false;
+  
+  // Overlay de detalhes
+  showDetailsOverlay = false;
+  selectedCardDetails: any = null;
+  selectedCardType: string = '';
 
   // Filtros
   searchTerm = '';
@@ -611,6 +616,202 @@ export class FinancialComponent implements OnInit, OnDestroy {
       .filter(a => a.status === 'pending' && new Date(a.dueDate) <= maxDate)
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
       .slice(0, limit);
+  }
+
+  // Métodos para o overlay de detalhes
+  openCardDetails(cardType: string) {
+    this.selectedCardType = cardType;
+    this.selectedCardDetails = this.getCardDetails(cardType);
+    this.showDetailsOverlay = true;
+  }
+
+  closeDetailsOverlay() {
+    this.showDetailsOverlay = false;
+    this.selectedCardDetails = null;
+    this.selectedCardType = '';
+  }
+
+  getCardDetails(cardType: string) {
+    const today = new Date();
+    
+    switch (cardType) {
+      case 'pending-payables':
+        const pendingPayables = this.accountsPayable.filter(a => a.status === 'pending');
+        return {
+          title: 'Contas a Pagar - Total Pendente',
+          totalValue: this.stats.pendingPayables,
+          items: pendingPayables.map(account => ({
+            description: account.description,
+            amount: account.amount,
+            dueDate: account.dueDate,
+            supplier: account.supplierId,
+            isOverdue: this.isOverdue(account.dueDate)
+          })),
+          summary: {
+            totalCount: pendingPayables.length,
+            overdueCount: pendingPayables.filter(a => this.isOverdue(a.dueDate)).length,
+            thisMonthCount: pendingPayables.filter(a => {
+              const dueDate = new Date(a.dueDate);
+              return dueDate.getMonth() === today.getMonth() && dueDate.getFullYear() === today.getFullYear();
+            }).length
+          }
+        };
+
+      case 'overdue-payables':
+        const overduePayables = this.accountsPayable.filter(a => a.status === 'pending' && this.isOverdue(a.dueDate));
+        return {
+          title: 'Contas a Pagar - Vencidas',
+          totalValue: this.stats.overduePayables,
+          items: overduePayables.map(account => ({
+            description: account.description,
+            amount: account.amount,
+            dueDate: account.dueDate,
+            supplier: account.supplierId,
+            isOverdue: true,
+            daysOverdue: Math.floor((today.getTime() - new Date(account.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+          })),
+          summary: {
+            totalCount: overduePayables.length,
+            averageDaysOverdue: overduePayables.length > 0 ? 
+              Math.round(overduePayables.reduce((sum, a) => {
+                const daysOverdue = Math.floor((today.getTime() - new Date(a.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+                return sum + daysOverdue;
+              }, 0) / overduePayables.length) : 0
+          }
+        };
+
+      case 'pending-receivables':
+        const pendingReceivables = this.accountsReceivable.filter(r => r.status === 'pending');
+        return {
+          title: 'Contas a Receber - Total Pendente',
+          totalValue: this.stats.pendingReceivables,
+          items: pendingReceivables.map(account => ({
+            description: account.description,
+            amount: account.amount,
+            dueDate: account.dueDate,
+            customer: account.customerId,
+            isOverdue: this.isOverdue(account.dueDate)
+          })),
+          summary: {
+            totalCount: pendingReceivables.length,
+            overdueCount: pendingReceivables.filter(r => this.isOverdue(r.dueDate)).length,
+            thisMonthCount: pendingReceivables.filter(r => {
+              const dueDate = new Date(r.dueDate);
+              return dueDate.getMonth() === today.getMonth() && dueDate.getFullYear() === today.getFullYear();
+            }).length
+          }
+        };
+
+      case 'overdue-receivables':
+        const overdueReceivables = this.accountsReceivable.filter(r => r.status === 'pending' && this.isOverdue(r.dueDate));
+        return {
+          title: 'Contas a Receber - Vencidas',
+          totalValue: this.stats.overdueReceivables,
+          items: overdueReceivables.map(account => ({
+            description: account.description,
+            amount: account.amount,
+            dueDate: account.dueDate,
+            customer: account.customerId,
+            isOverdue: true,
+            daysOverdue: Math.floor((today.getTime() - new Date(account.dueDate).getTime()) / (1000 * 60 * 60 * 24))
+          })),
+          summary: {
+            totalCount: overdueReceivables.length,
+            averageDaysOverdue: overdueReceivables.length > 0 ? 
+              Math.round(overdueReceivables.reduce((sum, r) => {
+                const daysOverdue = Math.floor((today.getTime() - new Date(r.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+                return sum + daysOverdue;
+              }, 0) / overdueReceivables.length) : 0
+          }
+        };
+
+      case 'total-income':
+        const incomeMovements = this.cashMovements.filter(m => m.type === 'income');
+        const paidReceivables = this.accountsReceivable.filter(r => r.status === 'paid');
+        return {
+          title: 'Receitas Totais',
+          totalValue: this.stats.totalIncome,
+          items: [
+            ...incomeMovements.map(movement => ({
+              description: movement.description,
+              amount: movement.amount,
+              date: movement.date,
+              category: this.getCategoryText(movement.category),
+              type: 'Movimentação de Caixa'
+            })),
+            ...paidReceivables.map(account => ({
+              description: account.description,
+              amount: account.amount,
+              date: account.dueDate,
+              customer: account.customerId,
+              type: 'Conta Recebida'
+            }))
+          ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+          summary: {
+            movementsCount: incomeMovements.length,
+            receivablesCount: paidReceivables.length,
+            movementsTotal: incomeMovements.reduce((sum, m) => sum + m.amount, 0),
+            receivablesTotal: paidReceivables.reduce((sum, r) => sum + r.amount, 0)
+          }
+        };
+
+      case 'total-expense':
+        const expenseMovements = this.cashMovements.filter(m => m.type === 'expense');
+        const paidPayables = this.accountsPayable.filter(a => a.status === 'paid');
+        return {
+          title: 'Despesas Totais',
+          totalValue: this.stats.totalExpense,
+          items: [
+            ...expenseMovements.map(movement => ({
+              description: movement.description,
+              amount: movement.amount,
+              date: movement.date,
+              category: this.getCategoryText(movement.category),
+              type: 'Movimentação de Caixa'
+            })),
+            ...paidPayables.map(account => ({
+              description: account.description,
+              amount: account.amount,
+              date: account.dueDate,
+              supplier: account.supplierId,
+              type: 'Conta Paga'
+            }))
+          ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+          summary: {
+            movementsCount: expenseMovements.length,
+            payablesCount: paidPayables.length,
+            movementsTotal: expenseMovements.reduce((sum, m) => sum + m.amount, 0),
+            payablesTotal: paidPayables.reduce((sum, a) => sum + a.amount, 0)
+          }
+        };
+
+      case 'net-cash-flow':
+        return {
+          title: 'Fluxo de Caixa Líquido',
+          totalValue: this.stats.netCashFlow,
+          items: [
+            {
+              description: 'Total de Receitas',
+              amount: this.stats.totalIncome,
+              type: 'Receita',
+              isPositive: true
+            },
+            {
+              description: 'Total de Despesas',
+              amount: this.stats.totalExpense,
+              type: 'Despesa',
+              isPositive: false
+            }
+          ],
+          summary: {
+            isPositive: this.stats.netCashFlow >= 0,
+            margin: this.stats.totalIncome > 0 ? ((this.stats.netCashFlow / this.stats.totalIncome) * 100) : 0
+          }
+        };
+
+      default:
+        return null;
+    }
   }
 
 
