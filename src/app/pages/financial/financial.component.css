@@ -1144,8 +1144,8 @@
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 30px;
-  margin-bottom: 30px;
-  align-items: start;
+  margin-bottom: 15px;
+  align-items: center;
 }
 
 .summary-card {
