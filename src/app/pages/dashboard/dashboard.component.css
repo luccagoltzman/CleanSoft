@@ -180,6 +180,86 @@
   color: #f44336;
 }
 
+/* Seção de Gráficos */
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.chart-card .card-header {
+  background: linear-gradient(135deg, var(--primary-color), #1565c0);
+  color: white;
+  padding: 20px;
+}
+
+.chart-card .card-content {
+  padding: 20px;
+  height: 300px;
+  position: relative;
+}
+
+/* Seção do Calendário */
+.calendar-section {
+  margin-bottom: 40px;
+}
+
+.calendar-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.calendar-card .card-header {
+  background: linear-gradient(135deg, var(--primary-color), #1565c0);
+  color: white;
+  padding: 20px;
+}
+
+.calendar-card .card-content {
+  padding: 20px;
+  min-height: 500px;
+}
+
+/* Estilos do FullCalendar */
+::ng-deep .fc {
+  font-family: inherit;
+}
+
+::ng-deep .fc-toolbar-title {
+  font-size: 1.2rem !important;
+  font-weight: 600;
+}
+
+::ng-deep .fc-button {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+::ng-deep .fc-button:hover {
+  background-color: #1565c0 !important;
+  border-color: #1565c0 !important;
+}
+
+::ng-deep .fc-event {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  cursor: pointer;
+}
+
+::ng-deep .fc-event:hover {
+  opacity: 0.9;
+}
+
 /* Seções de Informações */
 .info-sections {
   display: grid;
@@ -340,8 +420,34 @@
     font-size: 1.5rem;
   }
   
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card .card-content {
+    height: 250px;
+  }
+
+  .calendar-card .card-content {
+    min-height: 400px;
+  }
+  
   .info-sections {
     grid-template-columns: 1fr;
+  }
+
+  ::ng-deep .fc-toolbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  ::ng-deep .fc-toolbar-title {
+    font-size: 1rem !important;
+  }
+
+  ::ng-deep .fc-button {
+    padding: 6px 12px !important;
+    font-size: 0.9rem !important;
   }
 }
 

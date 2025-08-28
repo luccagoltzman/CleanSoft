@@ -72,6 +72,39 @@
   <!-- Skeleton das Estatísticas -->
   <app-stats-skeleton *ngIf="isLoading" [statsCount]="5"></app-stats-skeleton>
 
+  <!-- Seção de Gráficos -->
+  <div class="charts-section">
+    <div class="chart-card">
+      <div class="card-header">
+        <h3>Vendas por Mês</h3>
+      </div>
+      <div class="card-content">
+        <canvas #salesChart></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-header">
+        <h3>Serviços Mais Populares</h3>
+      </div>
+      <div class="card-content">
+        <canvas #servicesChart></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seção do Calendário -->
+  <div class="calendar-section">
+    <div class="calendar-card">
+      <div class="card-header">
+        <h3>Agenda de Serviços</h3>
+      </div>
+      <div class="card-content">
+        <full-calendar [options]="calendarOptions"></full-calendar>
+      </div>
+    </div>
+  </div>
+
   <!-- Seções de Informações -->
   <div class="info-sections">
     <div class="info-card">

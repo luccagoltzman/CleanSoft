@@ -1,21 +1,52 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild, PLATFORM_ID, Inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { forkJoin, Subject, takeUntil, timer } from 'rxjs';
-import { Customer, Sale, Service, Product, Vehicle } from '../../models';
+import { Customer, Sale, Service, Product, Vehicle, ServiceCategory } from '../../models';
 import { ApiService } from '../../services/api.service';
 import { StatsSkeletonComponent } from '../../shared/components';
+import { Chart, registerables } from 'chart.js';
+import { FullCalendarModule } from '@fullcalendar/angular';
+import { CalendarOptions } from '@fullcalendar/core';
+import ptBrLocale from '@fullcalendar/core/locales/pt-br';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, StatsSkeletonComponent],
+  imports: [CommonModule, StatsSkeletonComponent, FullCalendarModule],
   providers: [ApiService],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.css'
+  styleUrl: './dashboard.component.css',
+  host: {
+    'class': 'dashboard-container'
+  }
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  @ViewChild('salesChart') salesChartCanvas!: ElementRef;
+  @ViewChild('servicesChart') servicesChartCanvas!: ElementRef;
+  
   private destroy$ = new Subject<void>();
   private customers: Customer[] = [];
+  private salesChart: Chart<'line', number[], string> | undefined;
+  private servicesChart: Chart<'doughnut', number[], string> | undefined;
+
+  calendarOptions: CalendarOptions = {
+    plugins: [dayGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    locale: ptBrLocale,
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,dayGridWeek'
+    },
+    events: [],
+    eventClick: this.handleEventClick.bind(this),
+    dateClick: this.handleDateClick.bind(this)
+  };
+
   stats = {
     totalCustomers: 0,
     totalVehicles: 0,
@@ -29,13 +60,121 @@ export class DashboardComponent implements OnInit, OnDestroy {
   lowStockProducts: any[] = [];
   isLoading = false;
 
+  private isBrowser: boolean;
+
   constructor(
     private api: ApiService,
-    private cdr: ChangeDetectorRef
-  ) {}
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
   ngOnInit() {
     this.loadDashboardData();
+  }
+
+  ngAfterViewInit() {
+    if (this.isBrowser) {
+      // Aguarda o carregamento dos dados antes de inicializar os gráficos
+      timer(100).pipe(takeUntil(this.destroy$)).subscribe(() => {
+        if (!this.salesChart) {
+          this.initializeSalesChart();
+        }
+        if (!this.servicesChart) {
+          this.initializeServicesChart();
+        }
+      });
+    }
+  }
+
+
+  private initializeSalesChart() {
+    if (this.salesChart) {
+      this.salesChart.destroy();
+    }
+
+    const ctx = this.salesChartCanvas?.nativeElement?.getContext('2d');
+    if (!ctx) return;
+
+    this.salesChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+        datasets: [{
+          label: 'Vendas Mensais (R$)',
+          data: new Array(12).fill(0),
+          borderColor: '#1976d2',
+          backgroundColor: 'rgba(25, 118, 210, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Vendas por Mês',
+            font: {
+              size: 16
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private initializeServicesChart() {
+    if (this.servicesChart) {
+      this.servicesChart.destroy();
+    }
+
+    const ctx = this.servicesChartCanvas?.nativeElement?.getContext('2d');
+    if (!ctx) return;
+
+    this.servicesChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: [ServiceCategory.SIMPLE, ServiceCategory.DETAILED, ServiceCategory.TECHNICAL],
+        datasets: [{
+          data: [0, 0, 0],
+          backgroundColor: [
+            '#4caf50',
+            '#2196f3',
+            '#ff9800'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right'
+          },
+          title: {
+            display: true,
+            text: 'Serviços por Categoria',
+            font: {
+              size: 16
+            }
+          }
+        }
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -61,9 +200,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }) => {
         this.customers = data.customers;
 
+        console.log('Dados carregados:', data); // Debug para ver os dados reais
+
         this.updateStats(data);
         this.updateRecentSales(data.sales);
         this.updateLowStockProducts(data.products);
+
+        // Atualiza os gráficos e o calendário após o carregamento dos dados
+        if (this.isBrowser) {
+          this.updateSalesChart(data.sales);
+          this.updateServicesChart(data.services);
+        }
+        this.updateCalendarEvents(data.services);
+        
         // Adiciona delay mínimo de 1.5 segundos para mostrar o skeleton
         timer(1500).subscribe(() => {
           this.isLoading = false;
@@ -143,4 +292,137 @@ export class DashboardComponent implements OnInit, OnDestroy {
         minimumStock: product.minStock
       }));
   }
+
+  private updateSalesChart(sales: Sale[]) {
+    if (!this.isBrowser) return;
+
+    if (!this.salesChart) {
+      this.initializeSalesChart();
+    }
+
+    console.log('Vendas recebidas:', sales); // Debug
+
+    // Se não há vendas, cria dados de exemplo para teste
+    if (!sales || sales.length === 0) {
+      console.log('Nenhuma venda encontrada, usando dados de exemplo');
+      const exampleData = [100, 150, 200, 120, 180, 90, 250, 300, 220, 160, 190, 280];
+      if (this.salesChart) {
+        this.salesChart.data.datasets[0].data = exampleData;
+        this.salesChart.update();
+      }
+      return;
+    }
+
+    // Usa a mesma lógica de filtragem que já existe no updateStats
+    const currentYear = new Date().getFullYear();
+
+    // Agrupa vendas por mês
+    const salesByMonth = new Array(12).fill(0);
+    sales.forEach(sale => {
+      // Tenta usar diferentes propriedades de data
+      const saleDate = new Date(sale.date || sale.createdAt);
+      if (!isNaN(saleDate.getTime()) && saleDate.getFullYear() === currentYear) {
+        salesByMonth[saleDate.getMonth()] += sale.total || 0;
+      }
+    });
+
+    console.log('Vendas por mês calculadas:', salesByMonth); // Debug
+
+    if (this.salesChart) {
+      this.salesChart.data.datasets[0].data = salesByMonth;
+      this.salesChart.update(); // Permite animação para visualizar a mudança
+    }
+  }
+
+  private updateServicesChart(services: Service[]) {
+    if (!this.isBrowser) return;
+
+    if (!this.servicesChart) {
+      this.initializeServicesChart();
+    }
+
+    console.log('Serviços recebidos:', services); // Debug
+
+    // Se não há serviços, cria dados de exemplo para teste
+    if (!services || services.length === 0) {
+      console.log('Nenhum serviço encontrado, usando dados de exemplo');
+      const exampleData = [5, 8, 3];
+      if (this.servicesChart) {
+        this.servicesChart.data.datasets[0].data = exampleData;
+        this.servicesChart.update();
+      }
+      return;
+    }
+
+    // Conta todos os serviços por categoria (não apenas ativos)
+    const categoryCounts = {
+      [ServiceCategory.SIMPLE]: 0,
+      [ServiceCategory.DETAILED]: 0,
+      [ServiceCategory.TECHNICAL]: 0
+    };
+
+    services.forEach(service => {
+      console.log('Serviço categoria:', service.category); // Debug
+      if (service.category in categoryCounts) {
+        categoryCounts[service.category]++;
+      } else {
+        // Se a categoria não existe, adiciona ao contador de SIMPLE como fallback
+        categoryCounts[ServiceCategory.SIMPLE]++;
+      }
+    });
+
+    console.log('Serviços por categoria calculados:', categoryCounts); // Debug
+
+    const dataArray = [
+      categoryCounts[ServiceCategory.SIMPLE],
+      categoryCounts[ServiceCategory.DETAILED],
+      categoryCounts[ServiceCategory.TECHNICAL]
+    ];
+
+    console.log('Array de dados para o gráfico:', dataArray); // Debug
+
+    if (this.servicesChart) {
+      this.servicesChart.data.datasets[0].data = dataArray;
+      this.servicesChart.update(); // Permite animação para visualizar a mudança
+    }
+  }
+
+  private handleEventClick(info: any) {
+    // Aqui você pode implementar a lógica para exibir detalhes do evento
+    console.log('Evento clicado:', info.event);
+  }
+
+  private handleDateClick(info: any) {
+    // Aqui você pode implementar a lógica para adicionar um novo evento
+    console.log('Data clicada:', info.date);
+  }
+
+  private updateCalendarEvents(services: Service[]) {
+    // Usa a mesma lógica de filtragem que já existe no updateStats
+    const pendingServices = services.filter(service => !service.isActive);
+    
+    const events = pendingServices.map(service => ({
+      id: service.id.toString(),
+      title: `${service.name} - ${service.category}`,
+      start: service.dueDate || service.createdAt, // Usa createdAt como fallback
+      end: service.dueDate || service.createdAt,
+      backgroundColor: '#f44336', // Vermelho para serviços pendentes
+      borderColor: '#f44336',
+      allDay: true // Eventos de dia inteiro para melhor visualização
+    }));
+
+    this.calendarOptions = {
+      ...this.calendarOptions,
+      events,
+      eventTimeFormat: {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }
+    };
+  }
+
+
+
+
 }

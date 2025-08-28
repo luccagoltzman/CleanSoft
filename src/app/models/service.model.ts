@@ -6,12 +6,14 @@ export interface Service {
   name: string;
   description: string;
   category: ServiceCategory;
+  type: string;
   basePrice: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
   customerId: number;
   vehicleId: number;
+  scheduledDate: Date;
   services_with_addons?: any[];
 }
 
