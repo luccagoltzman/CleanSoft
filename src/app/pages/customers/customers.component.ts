@@ -8,16 +8,16 @@ import { ToastrService } from 'ngx-toastr';
 
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
-import { StatsSkeletonComponent } from '../../shared/components';
+import { StatsSkeletonComponent, TableSkeletonComponent } from '../../shared/components';
 import { trigger, style, animate, transition } from '@angular/animations';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent, TableSkeletonComponent],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css',
-    animations: [
+  animations: [
     trigger('fadeIn', [
       transition(':enter', [
         style({ opacity: 0 }),

@@ -59,10 +59,12 @@
 
 .btn-primary:hover {
   background-color: #1565c0;
+    transform: scale(1.05);
+
 }
 
 .btn-secondary {
-  background-color: var(--secondary-color);
+  background-color: #919191;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -73,7 +75,7 @@
 }
 
 .btn-secondary:hover {
-  background-color: #616161;
+  transform: scale(1.05);
 }
 
 /* Layout responsivo legado */

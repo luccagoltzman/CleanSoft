@@ -8,12 +8,12 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
 import { PaginationService } from '../../shared/services/pagination.service';
 import { ToastrService } from 'ngx-toastr';
 import { RelatorioComponent } from '../../shared/relatorio/relatorio.component';
-import { StatsSkeletonComponent } from '../../shared/components';
+import { StatsSkeletonComponent, TableSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, RelatorioComponent, StatsSkeletonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, RelatorioComponent, StatsSkeletonComponent,TableSkeletonComponent],
   templateUrl: './sales.component.html',
   styleUrl: './sales.component.css'
 })

@@ -183,13 +183,13 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+  background:  var(--primary-color);
 }
 
 .summary-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  background: linear-gradient(to bottom right, white, var(--background-light));
+  background:  var(--primary-color);
 }
 
 .card-icon {

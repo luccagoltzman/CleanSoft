@@ -6,26 +6,6 @@
     </div>
 
 
-
-    <!-- Estatísticas do Relatório -->
-    <div class="report-stats" *ngIf="!isLoading">
-      <div class="stat-item">
-        <div class="stat-value">{{ reportStats.totalSales }}</div>
-        <div class="stat-label">Total de Vendas</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value">R$ {{ reportStats.totalRevenue.toFixed(2) }}</div>
-        <div class="stat-label">Receita Total</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value">R$ {{ reportStats.averageTicket.toFixed(2) }}</div>
-        <div class="stat-label">Ticket Médio</div>
-      </div>
-    </div>
-
-    <!-- Skeleton das Estatísticas -->
-    <app-stats-skeleton *ngIf="isLoading" [statsCount]="3"></app-stats-skeleton>
-
     <div class="modal-filters">
       <!-- Filtros existentes -->
       <div class="filter-group">
@@ -120,7 +100,7 @@
       </div>
       <app-table-skeleton 
         [headers]="['Cliente', 'Telefone', 'Total', 'Data da Venda', 'Status', 'Método']"
-        [rows]="8"
+        [rows]="6"
         [cells]="6">
       </app-table-skeleton>
     </div>

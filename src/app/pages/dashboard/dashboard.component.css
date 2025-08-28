@@ -48,7 +48,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+  background: var(--primary-color);
 }
 
 .stat-card:hover {

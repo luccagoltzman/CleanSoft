@@ -11,7 +11,7 @@ import { timer } from 'rxjs';
 @Component({
   selector: 'app-relatorio',
   standalone: true,
-  imports: [CommonModule, FormsModule, SkeletonComponent, StatsSkeletonComponent, TableSkeletonComponent],
+  imports: [CommonModule, FormsModule, SkeletonComponent, TableSkeletonComponent],
   templateUrl: './relatorio.component.html',
   styleUrls: ['./relatorio.component.css']
 })

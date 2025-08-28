@@ -214,10 +214,6 @@ p {
   border-color: var(--border-medium);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--background-secondary);
-  border-color: var(--border-strong);
-}
 
 .btn-success {
   background-color: var(--success-600);

@@ -28,7 +28,7 @@
 .modal-header {
   background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
   color: var(--text-inverse);
-  padding: var(--spacing-2xl) var(--spacing-3xl);
+  padding: var(--spacing-2xl) var(--spacing-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -87,7 +87,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--spacing-xl);
-  padding: var(--spacing-3xl);
+  padding: var(--spacing-md);
   background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-tertiary) 100%);
   border-bottom: 1px solid var(--border-light);
 }
@@ -145,7 +145,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--spacing-xl);
-  padding: var(--spacing-3xl);
+  padding: var(--spacing-md);
   background: var(--background-primary);
   border-bottom: 1px solid var(--border-light);
 }
@@ -267,7 +267,7 @@
 
 /* Tabela */
 .table-container {
-  padding: 0 var(--spacing-3xl) var(--spacing-3xl);
+  padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
 .results-info {
@@ -360,14 +360,14 @@ tr:hover {
   display: flex;
   justify-content: center;
   gap: var(--spacing-xl);
-  padding: var(--spacing-3xl);
+  padding: var(--spacing-md);
   background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-tertiary) 100%);
   border-top: 1px solid var(--border-light);
 }
 
 .btn-export-csv,
 .btn-export-pdf {
-  padding: var(--spacing-lg) var(--spacing-3xl);
+  padding: var(--spacing-lg) var(--spacing-md);
   border: none;
   border-radius: 25px;
   cursor: pointer;

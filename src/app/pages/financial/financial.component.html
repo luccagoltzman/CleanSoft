@@ -144,7 +144,7 @@
 
 
       <!-- Resumo Rápido -->
-      <div class="quick-summary">
+      <div *ngIf="!isLoading" class="quick-summary">
         <div class="summary-section">
           <h3>Contas Vencendo em Breve</h3>
           <div class="summary-list">
@@ -175,7 +175,7 @@
       </div>
 
       <!-- Skeleton das Estatísticas -->
-      <app-stats-skeleton *ngIf="isLoading" [statsCount]="7"></app-stats-skeleton>
+      <app-stats-skeleton *ngIf="isLoading" [statsCount]="3"></app-stats-skeleton>
     </div>
 
     <!-- Contas a Pagar -->

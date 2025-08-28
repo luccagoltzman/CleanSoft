@@ -39,7 +39,7 @@
 
   <!-- Navegação por abas -->
   <div class="tabs-navigation">
-    <button *ngFor="let tab of ['general', 'customers', 'services', 'products', 'stock']"
+    <button *ngFor="let tab of [ 'customers', 'services', 'products', 'stock']"
       [class.active]="activeTab === tab" (click)="setActiveTab(tab)" class="tab-button">
       <i class="fas" [class.fa-chart-line]="tab === 'general'" [class.fa-users]="tab === 'customers'"
         [class.fa-tools]="tab === 'services'" [class.fa-box]="tab === 'products'" [class.fa-warehouse]="tab === 'stock'"
@@ -761,54 +761,7 @@
     </div>
   </div>
 
-  <!-- Configurações de Exportação -->
-  <div class="export-section">
-    <h3>Exportar Relatório</h3>
-    <form [formGroup]="exportForm" class="export-form">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="format">Formato</label>
-          <select id="format" formControlName="format">
-            <option *ngFor="let format of exportFormats" [value]="format.value">
-              {{ format.label }}
-            </option>
-          </select>
-        </div>
 
-        <div class="form-group">
-          <label for="chartType">Tipo de Gráfico</label>
-          <select id="chartType" formControlName="chartType">
-            <option value="bar">Barras</option>
-            <option value="line">Linha</option>
-            <option value="pie">Pizza</option>
-            <option value="doughnut">Rosca</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="pageSize">Tamanho da Página</label>
-          <select id="pageSize" formControlName="pageSize">
-            <option value="A4">A4</option>
-            <option value="Letter">Letter</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="orientation">Orientação</label>
-          <select id="orientation" formControlName="orientation">
-            <option value="portrait">Retrato</option>
-            <option value="landscape">Paisagem</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <button type="button" class="btn btn-success" (click)="exportReport()">
-            <i class="fas fa-download"></i> Exportar
-          </button>
-        </div>
-      </div>
-    </form>
-  </div>
 </div>
 
 

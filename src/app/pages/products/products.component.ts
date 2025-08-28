@@ -7,12 +7,12 @@ import { ApiService } from '../../services/api.service';
 import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
-import { StatsSkeletonComponent } from '../../shared/components';
+import {  StatsSkeletonComponent, TableSkeletonComponent } from '../../shared/components';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent,TableSkeletonComponent, StatsSkeletonComponent],
   templateUrl: './products.component.html',
   styleUrl: './products.component.css'
 })

@@ -78,8 +78,14 @@
     </div>
   </div>
 
-  <!-- Tabela de Clientes -->
-  <div class="table-container">
+  <div class="table-container" *ngIf="isLoading">
+    <app-table-skeleton [headers]="['Cliente', 'Telefone', 'Total', 'Data da Venda', 'Status', 'Método']" [rows]="6"
+      [cells]="6">
+    </app-table-skeleton>
+  </div>
+
+  <!-- Tabela de Serviços -->
+  <div class="table-container" *ngIf="!isLoading">
     <table class="customers-table">
       <thead>
         <tr>
@@ -142,10 +148,7 @@
     </div>
 
     <!-- Paginação -->
-    <app-pagination
-      [currentPage]="currentPage"
-      [pageSize]="pageSize"
-      [totalItems]="filteredCustomers.length"
+    <app-pagination [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="filteredCustomers.length"
       (pageChange)="onPageChange($event)">
     </app-pagination>
   </div>

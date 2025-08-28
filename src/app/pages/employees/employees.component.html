@@ -88,8 +88,15 @@
     </div>
   </div>
 
-  <!-- Tabela de Funcionários -->
-  <div class="table-container">
+ <div class="table-container" *ngIf="isLoading">
+    <app-table-skeleton [headers]="['Cliente', 'Telefone', 'Total', 'Data da Venda', 'Status', 'Método']" [rows]="6"
+      [cells]="6">
+    </app-table-skeleton>
+  </div>
+
+
+  <!-- Tabela de Serviços -->
+  <div class="table-container" *ngIf="!isLoading">
     <table class="employees-table">
       <thead>
         <tr>
