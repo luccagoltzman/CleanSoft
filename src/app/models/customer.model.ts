@@ -24,6 +24,12 @@ export interface Vehicle {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  // Campos adicionais da API
+  brandCode?: string;
+  modelCode?: string;
+  fipeCode?: string;
+  fipeValue?: string;
+  fuel?: string;
 }
 
 export interface CustomerSearchParams {

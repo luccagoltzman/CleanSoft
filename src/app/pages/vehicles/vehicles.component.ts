@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Vehicle, Customer } from '../../models';
 import { Subject, takeUntil, combineLatest, of, Observable, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { VehicleApiService, VehicleBrand, VehicleModel } from '../../services/vehicle-api.service';
 import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
@@ -38,55 +39,15 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     byBrand: { brand: string; count: number }[];
     byYear: { year: number; count: number }[];
   } = { total: 0, active: 0, inactive: 0, byBrand: [], byYear: [] };
-  availableBrands: string[] = [
-    'Honda',
-    'Toyota',
-    'Ford',
-    'Chevrolet',
-    'Volkswagen',
-    'Nissan',
-    'Hyundai'
-  ];
+  availableBrands: VehicleBrand[] = [];
+  isLoadingBrands = false;
+  isLoadingModels = false;
 
-  brandModels = [
-    { brand: 'Honda', model: 'Civic' },
-    { brand: 'Honda', model: 'Accord' },
-    { brand: 'Honda', model: 'HR-V' },
-    { brand: 'Honda', model: 'Fit' },
-
-    { brand: 'Toyota', model: 'Corolla' },
-    { brand: 'Toyota', model: 'Camry' },
-    { brand: 'Toyota', model: 'Yaris' },
-    { brand: 'Toyota', model: 'RAV4' },
-
-    { brand: 'Ford', model: 'Mustang' },
-    { brand: 'Ford', model: 'Fiesta' },
-    { brand: 'Ford', model: 'EcoSport' },
-    { brand: 'Ford', model: 'Focus' },
-
-    { brand: 'Chevrolet', model: 'Onix' },
-    { brand: 'Chevrolet', model: 'Cruze' },
-    { brand: 'Chevrolet', model: 'Tracker' },
-    { brand: 'Chevrolet', model: 'S10' },
-
-    { brand: 'Volkswagen', model: 'Golf' },
-    { brand: 'Volkswagen', model: 'Polo' },
-    { brand: 'Volkswagen', model: 'T-Cross' },
-    { brand: 'Volkswagen', model: 'Virtus' },
-
-    { brand: 'Nissan', model: 'Sentra' },
-    { brand: 'Nissan', model: 'Altima' },
-    { brand: 'Nissan', model: 'Kicks' },
-    { brand: 'Nissan', model: 'Versa' },
-
-    { brand: 'Hyundai', model: 'HB20' },
-    { brand: 'Hyundai', model: 'Creta' },
-    { brand: 'Hyundai', model: 'Tucson' },
-    { brand: 'Hyundai', model: 'Elantra' }
-  ];
+  selectedBrandCode = '';
+  selectedModelCode = '';
 
 
-  availableModels: string[] = [];
+  availableModels: VehicleModel[] = [];
 
   private destroy$ = new Subject<void>();
 
@@ -98,6 +59,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private api: ApiService,
+    private vehicleApi: VehicleApiService,
     private paginationService: PaginationService,
     private toast: ToastrService,
     private cdr: ChangeDetectorRef
@@ -106,7 +68,9 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       customerId: ['', Validators.required],
       licensePlate: ['', [Validators.required, Validators.pattern(/^[A-Z]{3}-\d{4}$/)]],
       brand: ['', Validators.required],
+      brandCode: [''],
       model: ['', Validators.required],
+      modelCode: [''],
       year: ['', [Validators.required, Validators.min(1900), Validators.max(new Date().getFullYear() + 1)]],
       color: ['', Validators.required],
       observations: ['']
@@ -116,7 +80,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadVehicles();
     this.loadCustomers();
-
+    this.loadBrands();
   }
 
   ngOnDestroy() {
@@ -178,28 +142,82 @@ export class VehiclesComponent implements OnInit, OnDestroy {
   }
 
 
-  getModelsByBrand(brand: string): Observable<string[]> {
-    const models = [...new Set(
-      this.brandModels
-        .filter(v => v.brand?.toLowerCase() === brand.toLowerCase())
-        .map(v => v.model)
-        .filter(m => m) // remove modelos null ou undefined
-    )];
-    return of(models.sort());
+  loadBrands() {
+    this.isLoadingBrands = true;
+    this.vehicleApi.getBrands()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (brands) => {
+          this.availableBrands = brands;
+          this.isLoadingBrands = false;
+          this.cdr.detectChanges();
+          console.log(`${brands.length} marcas carregadas da API FIPE`);
+        },
+        error: (error) => {
+          console.error('Erro ao carregar marcas da API FIPE:', error);
+          this.isLoadingBrands = false;
+          this.availableBrands = [];
+          this.toast.error('Não foi possível carregar as marcas. Verifique sua conexão com a internet.', 'Erro API FIPE');
+        }
+      });
+  }
+
+  getModelsByBrand(brandCode: string): Observable<VehicleModel[]> {
+    return this.vehicleApi.getModelsByBrand(brandCode);
   }
 
   onBrandChange() {
-    const brand = this.vehicleForm.get('brand')?.value;
-    if (brand) {
-      this.getModelsByBrand(brand)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(models => {
-          this.availableModels = models;
-          this.vehicleForm.get('model')?.setValue('');
-        });
+    const selectedBrand = this.vehicleForm.get('brand')?.value;
+    
+    if (selectedBrand) {
+      // Encontrar o código da marca selecionada
+      const brand = this.availableBrands.find(b => b.name === selectedBrand);
+      
+      if (brand) {
+        this.selectedBrandCode = brand.code || brand.id;
+        this.vehicleForm.get('brandCode')?.setValue(this.selectedBrandCode);
+        
+        this.isLoadingModels = true;
+        this.getModelsByBrand(this.selectedBrandCode)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (models) => {
+              this.availableModels = models;
+              this.vehicleForm.get('model')?.setValue('');
+              this.vehicleForm.get('modelCode')?.setValue('');
+              this.isLoadingModels = false;
+              this.cdr.detectChanges();
+              console.log(`${models.length} modelos carregados da API FIPE para marca ${selectedBrand}`);
+            },
+            error: (error) => {
+              console.error('Erro ao carregar modelos da API FIPE:', error);
+              this.availableModels = [];
+              this.isLoadingModels = false;
+              this.toast.error('Não foi possível carregar os modelos. Verifique sua conexão com a internet.', 'Erro API FIPE');
+            }
+          });
+      }
     } else {
       this.availableModels = [];
+      this.selectedBrandCode = '';
       this.vehicleForm.get('model')?.setValue('');
+      this.vehicleForm.get('brandCode')?.setValue('');
+      this.vehicleForm.get('modelCode')?.setValue('');
+    }
+  }
+
+  onModelChange() {
+    const selectedModel = this.vehicleForm.get('model')?.value;
+    
+    if (selectedModel) {
+      const model = this.availableModels.find(m => m.name === selectedModel);
+      if (model) {
+        this.selectedModelCode = model.code || model.id;
+        this.vehicleForm.get('modelCode')?.setValue(this.selectedModelCode);
+      }
+    } else {
+      this.selectedModelCode = '';
+      this.vehicleForm.get('modelCode')?.setValue('');
     }
   }
 
@@ -282,21 +300,45 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     this.selectedVehicle = vehicle;
 
     // Carregar modelos da marca selecionada
-    this.getModelsByBrand(vehicle.brand)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(models => {
-        this.availableModels = models;
+            // Buscar a marca pelo nome
+        const brand = this.availableBrands.find(b => b.name === vehicle.brand);
+        if (brand) {
+          this.selectedBrandCode = brand.code || brand.id;
+          
+          this.getModelsByBrand(this.selectedBrandCode)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(models => {
+              this.availableModels = models;
+              
+              const model = models.find(m => m.name === vehicle.model);
+              this.selectedModelCode = model ? (model.code || model.id) : '';
 
-        this.vehicleForm.patchValue({
-          customerId: vehicle.customerId,
-          licensePlate: vehicle.licensePlate,
-          brand: vehicle.brand,
-          model: vehicle.model,
-          year: vehicle.year,
-          color: vehicle.color,
-          observations: vehicle.observations
-        });
-      });
+              this.vehicleForm.patchValue({
+                customerId: vehicle.customerId,
+                licensePlate: vehicle.licensePlate,
+                brand: vehicle.brand,
+                brandCode: this.selectedBrandCode,
+                model: vehicle.model,
+                modelCode: this.selectedModelCode,
+                year: vehicle.year,
+                color: vehicle.color,
+                observations: vehicle.observations
+              });
+            });
+        } else {
+          // Se não encontrar a marca na API, usar dados existentes
+          this.vehicleForm.patchValue({
+            customerId: vehicle.customerId,
+            licensePlate: vehicle.licensePlate,
+            brand: vehicle.brand,
+            brandCode: vehicle.brandCode || '',
+            model: vehicle.model,
+            modelCode: vehicle.modelCode || '',
+            year: vehicle.year,
+            color: vehicle.color,
+            observations: vehicle.observations
+          });
+        }
 
     this.showForm = true;
   }
@@ -311,10 +353,19 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       const formValue = this.vehicleForm.value;
 
       if (this.isCreating) {
-        this.api.create('vehicles', {
+        const vehicleData = {
           ...formValue,
-          isActive: true
-        }).subscribe(() => {
+          isActive: true,
+          // Remover campos auxiliares antes de salvar
+          brandCode: undefined,
+          modelCode: undefined
+        };
+        
+        // Limpar campos auxiliares
+        delete vehicleData.brandCode;
+        delete vehicleData.modelCode;
+        
+        this.api.create('vehicles', vehicleData).subscribe(() => {
           this.closeForm();
           this.loadVehicles();
           this.loadStats();
@@ -323,7 +374,13 @@ export class VehiclesComponent implements OnInit, OnDestroy {
           this.toast.error('Erro ao criar veículo:', error);
         });
       } else if (this.isEditing && this.selectedVehicle) {
-        this.api.update('vehicles', this.selectedVehicle.id, formValue)
+        const vehicleData = { ...formValue };
+        
+        // Remover campos auxiliares antes de salvar
+        delete vehicleData.brandCode;
+        delete vehicleData.modelCode;
+        
+        this.api.update('vehicles', this.selectedVehicle.id, vehicleData)
           .subscribe(() => {
             this.closeForm();
             this.loadVehicles();

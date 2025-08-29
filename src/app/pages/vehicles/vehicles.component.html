@@ -73,7 +73,7 @@
         class="filter-select"
       >
         <option value="">Todas as Marcas</option>
-        <option *ngFor="let brand of availableBrands" [value]="brand">{{ brand }}</option>
+        <option *ngFor="let brand of availableBrands" [value]="brand.name">{{ brand.name }}</option>
       </select>
       
       <select 
@@ -220,23 +220,29 @@
         <div class="form-row">
           <div class="form-group">
             <label for="brand">Marca *</label>
-            <select id="brand" formControlName="brand" class="form-select" (change)="onBrandChange()">
-              <option value="">Selecione uma marca</option>
-              <option *ngFor="let brand of availableBrands" [value]="brand">{{ brand }}</option>
+            <select id="brand" formControlName="brand" class="form-select" (change)="onBrandChange()" [disabled]="isLoadingBrands">
+              <option value="">{{ isLoadingBrands ? 'Carregando marcas...' : 'Selecione uma marca' }}</option>
+              <option *ngFor="let brand of availableBrands" [value]="brand.name">{{ brand.name }}</option>
             </select>
             <div *ngIf="vehicleForm.get('brand')?.invalid && vehicleForm.get('brand')?.touched" class="error-message">
               Marca é obrigatória
+            </div>
+            <div *ngIf="isLoadingBrands" class="loading-indicator">
+              <i class="fas fa-spinner fa-spin"></i> Carregando marcas...
             </div>
           </div>
           
           <div class="form-group">
             <label for="model">Modelo *</label>
-            <select id="model" formControlName="model" class="form-select" [disabled]="!availableModels.length">
-              <option value="">Selecione um modelo</option>
-              <option *ngFor="let model of availableModels" [value]="model">{{ model }}</option>
+            <select id="model" formControlName="model" class="form-select" (change)="onModelChange()" [disabled]="!availableModels.length || isLoadingModels">
+              <option value="">{{ isLoadingModels ? 'Carregando modelos...' : (availableModels.length ? 'Selecione um modelo' : 'Selecione uma marca primeiro') }}</option>
+              <option *ngFor="let model of availableModels" [value]="model.name">{{ model.name }}</option>
             </select>
             <div *ngIf="vehicleForm.get('model')?.invalid && vehicleForm.get('model')?.touched" class="error-message">
               Modelo é obrigatório
+            </div>
+            <div *ngIf="isLoadingModels" class="loading-indicator">
+              <i class="fas fa-spinner fa-spin"></i> Carregando modelos...
             </div>
           </div>
         </div>

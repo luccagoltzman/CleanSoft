@@ -4,6 +4,34 @@
   margin: 0 auto;
 }
 
+/* Indicadores de carregamento */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(74, 144, 226, 0.1);
+  border-radius: 8px;
+}
+
+.loading-indicator i {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.form-select:disabled {
+  background-color: #f8f9fa;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Header da Página */
 .page-header {
   margin-bottom: 30px;
