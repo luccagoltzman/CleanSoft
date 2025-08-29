@@ -202,17 +202,85 @@
           </div>
           
           <div class="form-group">
-            <label for="licensePlate">Placa *</label>
-            <input 
-              type="text" 
-              id="licensePlate" 
-              formControlName="licensePlate" 
-              placeholder="ABC-1234"
-              class="form-input"
-              maxlength="8"
-            >
+            <label for="licensePlate">
+              Placa *
+              <button 
+                type="button" 
+                class="plate-type-toggle" 
+                (click)="togglePlateSelector()"
+                title="Configurar tipo de placa"
+              >
+                <i class="fas fa-cog"></i>
+              </button>
+            </label>
+            
+            <!-- Seletor de tipo de placa -->
+            <div *ngIf="showPlateSelector" class="plate-type-selector">
+              <div class="plate-type-options">
+                <label class="plate-option">
+                  <input 
+                    type="radio" 
+                    name="plateType" 
+                    value="auto" 
+                    [(ngModel)]="plateType"
+                    (change)="onPlateTypeChange('auto')"
+                  >
+                  <span>Detecção Automática</span>
+                </label>
+                <label class="plate-option">
+                  <input 
+                    type="radio" 
+                    name="plateType" 
+                    value="old" 
+                    [(ngModel)]="plateType"
+                    (change)="onPlateTypeChange('old')"
+                  >
+                  <span>Padrão Antigo (ABC-1234)</span>
+                </label>
+                <label class="plate-option">
+                  <input 
+                    type="radio" 
+                    name="plateType" 
+                    value="mercosul" 
+                    [(ngModel)]="plateType"
+                    (change)="onPlateTypeChange('mercosul')"
+                  >
+                  <span>Padrão Mercosul (ABC1D23)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Input da placa com indicador -->
+            <div class="plate-input-container">
+              <input 
+                type="text" 
+                id="licensePlate" 
+                formControlName="licensePlate"
+                (input)="onPlateInput($event)"
+                placeholder="{{ plateType === 'mercosul' ? 'ABC1D23' : plateType === 'old' ? 'ABC-1234' : 'Digite a placa...' }}"
+                class="form-input plate-input"
+                [class]="getPlateTypeClass()"
+                maxlength="8"
+              >
+              
+              <!-- Indicador do tipo de placa -->
+              <div *ngIf="plateValidation" class="plate-indicator" [class]="getPlateTypeClass()">
+                <i [class]="getPlateTypeIcon()"></i>
+                <span class="plate-type-text">{{ plateValidation.message }}</span>
+              </div>
+            </div>
+
+            <!-- Mensagens de erro/validação -->
             <div *ngIf="vehicleForm.get('licensePlate')?.invalid && vehicleForm.get('licensePlate')?.touched" class="error-message">
-              Placa deve estar no formato ABC-1234
+              {{ vehicleForm.get('licensePlate')?.errors?.['invalidPlate']?.message || 'Formato de placa inválido' }}
+            </div>
+            
+            <!-- Informações sobre o padrão -->
+            <div *ngIf="getPlateInfo()" class="plate-info">
+              <small>
+                <strong>{{ getPlateInfo()?.type }}:</strong> {{ getPlateInfo()?.description }}
+                <span class="plate-example">(Ex: {{ getPlateInfo()?.example }})</span>
+              </small>
             </div>
           </div>
         </div>

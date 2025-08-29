@@ -5,6 +5,7 @@ import { Vehicle, Customer } from '../../models';
 import { Subject, takeUntil, combineLatest, of, Observable, timer } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { VehicleApiService, VehicleBrand, VehicleModel } from '../../services/vehicle-api.service';
+import { PlateMaskService, PlateType, PlateValidation } from '../../services/plate-mask.service';
 import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
@@ -45,9 +46,12 @@ export class VehiclesComponent implements OnInit, OnDestroy {
 
   selectedBrandCode = '';
   selectedModelCode = '';
-
-
   availableModels: VehicleModel[] = [];
+  
+  // Controles de placa
+  plateType: PlateType = 'auto';
+  plateValidation: PlateValidation | null = null;
+  showPlateSelector = false;
 
   private destroy$ = new Subject<void>();
 
@@ -60,13 +64,14 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private api: ApiService,
     private vehicleApi: VehicleApiService,
+    private plateMask: PlateMaskService,
     private paginationService: PaginationService,
     private toast: ToastrService,
     private cdr: ChangeDetectorRef
   ) {
     this.vehicleForm = this.fb.group({
       customerId: ['', Validators.required],
-      licensePlate: ['', [Validators.required, Validators.pattern(/^[A-Z]{3}-\d{4}$/)]],
+      licensePlate: ['', [Validators.required, this.plateValidator.bind(this)]],
       brand: ['', Validators.required],
       brandCode: [''],
       model: ['', Validators.required],
@@ -426,9 +431,7 @@ export class VehiclesComponent implements OnInit, OnDestroy {
     return customer ? customer.name : 'Cliente não encontrado';
   }
 
-  formatLicensePlate(plate: string): string {
-    return plate.toUpperCase();
-  }
+
 
   getYearRange(): number[] {
     const currentYear = new Date().getFullYear();
@@ -444,5 +447,103 @@ export class VehiclesComponent implements OnInit, OnDestroy {
       'Branco', 'Preto', 'Prata', 'Cinza', 'Azul', 'Vermelho',
       'Verde', 'Amarelo', 'Laranja', 'Rosa', 'Roxo', 'Marrom'
     ];
+  }
+
+  // ===== MÉTODOS DE PLACA =====
+
+  /**
+   * Validador customizado para placa
+   */
+  plateValidator(control: any) {
+    if (!control.value) return null;
+    
+    const validation = this.plateMask.validatePlate(control.value);
+    this.plateValidation = validation;
+    
+    if (!validation.isValid) {
+      return { invalidPlate: { message: validation.message } };
+    }
+    
+    return null;
+  }
+
+  /**
+   * Manipula a mudança no input da placa
+   */
+  onPlateInput(event: any) {
+    const value = event.target.value;
+    const maskedValue = this.plateMask.applyMask(value, this.plateType);
+    
+    // Atualiza o valor do formulário com a máscara aplicada
+    this.vehicleForm.get('licensePlate')?.setValue(maskedValue, { emitEvent: false });
+    
+    // Atualiza a validação
+    const validation = this.plateMask.validatePlate(maskedValue);
+    this.plateValidation = validation;
+    
+    // Se detectou automaticamente, atualiza o tipo
+    if (this.plateType === 'auto' && validation.type) {
+      // Não muda o tipo se já foi selecionado manualmente
+    }
+    
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Alterna entre os tipos de placa
+   */
+  onPlateTypeChange(type: PlateType) {
+    this.plateType = type;
+    const currentValue = this.vehicleForm.get('licensePlate')?.value || '';
+    
+    if (currentValue) {
+      const maskedValue = this.plateMask.applyMask(currentValue, type);
+      this.vehicleForm.get('licensePlate')?.setValue(maskedValue);
+      
+      const validation = this.plateMask.validatePlate(maskedValue);
+      this.plateValidation = validation;
+    }
+    
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Alterna a visibilidade do seletor de tipo de placa
+   */
+  togglePlateSelector() {
+    this.showPlateSelector = !this.showPlateSelector;
+  }
+
+  /**
+   * Obtém informações sobre o padrão da placa atual
+   */
+  getPlateInfo() {
+    const currentValue = this.vehicleForm.get('licensePlate')?.value || '';
+    return this.plateMask.getPlateInfo(currentValue);
+  }
+
+  /**
+   * Formata placa para exibição na lista
+   */
+  formatLicensePlate(plate: string): string {
+    return this.plateMask.formatPlate(plate);
+  }
+
+  /**
+   * Obtém a classe CSS para o indicador do tipo de placa
+   */
+  getPlateTypeClass(): string {
+    if (!this.plateValidation?.type) return '';
+    
+    return this.plateValidation.type === 'mercosul' ? 'plate-mercosul' : 'plate-old';
+  }
+
+  /**
+   * Obtém o ícone para o tipo de placa
+   */
+  getPlateTypeIcon(): string {
+    if (!this.plateValidation?.type) return 'fas fa-question';
+    
+    return this.plateValidation.type === 'mercosul' ? 'fas fa-star' : 'fas fa-car';
   }
 }
