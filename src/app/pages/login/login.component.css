@@ -404,7 +404,7 @@
   .form-input {
     background: #fff;
     border-color: #75757538;
-    color: var(--neutral-100);
+    color: #212121;
   }
   
   .form-input:focus {
