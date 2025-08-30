@@ -8,11 +8,12 @@ import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 import { StatsSkeletonComponent, TableSkeletonComponent } from '../../shared/components';
+import { NgxMaskDirective } from 'ngx-mask';
 
 @Component({
   selector: 'app-employees',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent,TableSkeletonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent,TableSkeletonComponent, NgxMaskDirective],
   templateUrl: './employees.component.html',
   styleUrl: './employees.component.css'
 })
@@ -65,9 +66,9 @@ export class EmployeesComponent implements OnInit, OnDestroy {
   ) {
     this.employeeForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      cpf: ['', [Validators.required, Validators.pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/)]],
+      cpf: [''],
       position: ['', Validators.required],
-      phone: ['', [Validators.required, Validators.pattern(/^\(\d{2}\) \d{4,5}-\d{4}$/)]],
+      phone: [''],
       salary: ['', [Validators.required, Validators.min(0)]],
       admissionDate: ['', Validators.required]
     });

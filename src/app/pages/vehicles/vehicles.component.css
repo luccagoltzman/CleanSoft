@@ -634,7 +634,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  margin-bottom: 5px;
 }
 
 .form-group {
@@ -660,6 +659,7 @@
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s;
+  height: 52px;
 }
 
 .form-input:focus,

@@ -395,4 +395,51 @@ SOFTWARE.
 
 **🚀 Desenvolvido pela equipe CleanSoft**
 
-</div>
+### 5️⃣ Exemplo de uso de `<input>` com ngx-mask
+
+#### HTML
+
+```html 
+<h1>CPF: {{ cpf | cpfMask }}</h1>
+<h1>CNPJ: {{ cnpj | cnpjMask }}</h1>
+<h1>Celular: {{ phone | phoneMask }}</h1>
+
+<form>
+  <input
+    type="text"
+    [(ngModel)]="cpf"
+    name="cpf"
+    mask="000.000.000-00"
+    [dropSpecialCharacters]="true"
+    placeholder="000.000.000-00"
+  />
+
+  <input
+    type="text"
+    [(ngModel)]="cnpj"
+    name="cnpj"
+    mask="00.000.000/0000-00"
+    [dropSpecialCharacters]="true"
+    placeholder="00.000.000/0000-00"
+  />
+
+  <input
+    type="text"
+    [(ngModel)]="phone"
+    name="phone"
+    [mask]="phone.length > 10 ? '(00) 00000-0000' : '(00) 0000-0000'"
+    [dropSpecialCharacters]="true"
+    placeholder="(99) 99999-9999"
+  />
+
+  <button type="submit">Enviar</button>
+</form>
+```
+
+#### TypeScript
+
+```typescript
+cpf = '12345678901';
+cnpj = '12345678000199';
+phone = '11981708802';
+```

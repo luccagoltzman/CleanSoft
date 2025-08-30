@@ -10,11 +10,13 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
 import { PaginationService } from '../../shared/services/pagination.service';
 import { StatsSkeletonComponent, TableSkeletonComponent } from '../../shared/components';
 import { trigger, style, animate, transition } from '@angular/animations';
+import { PipesModule } from "../../pipes/mask.module";
+import { NgxMaskDirective } from 'ngx-mask';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent, TableSkeletonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent, StatsSkeletonComponent, TableSkeletonComponent, PipesModule, NgxMaskDirective],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css',
   animations: [
@@ -56,7 +58,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
   ) {
     this.customerForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      phone: ['', [Validators.required, Validators.pattern(/^\(\d{2}\) \d{4,5}-\d{4}$/)]],
+      phone: [''],
       email: ['', [Validators.required, Validators.email]],
       document: ['', [Validators.required]],
       documentType: ['CPF', Validators.required],
@@ -276,7 +278,5 @@ export class CustomersComponent implements OnInit, OnDestroy {
     }
   }
 
-  formatPhone(phone: string): string {
-    return phone.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
-  }
+ 
 }

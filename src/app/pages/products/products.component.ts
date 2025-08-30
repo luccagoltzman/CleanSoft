@@ -8,11 +8,12 @@ import { ToastrService } from 'ngx-toastr';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { PaginationService } from '../../shared/services/pagination.service';
 import {  StatsSkeletonComponent, TableSkeletonComponent } from '../../shared/components';
+import { NgxMaskDirective } from 'ngx-mask';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent,TableSkeletonComponent, StatsSkeletonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, PaginationComponent,TableSkeletonComponent, StatsSkeletonComponent,NgxMaskDirective],
   templateUrl: './products.component.html',
   styleUrl: './products.component.css'
 })
@@ -89,7 +90,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
       name: ['', [Validators.required, Validators.minLength(3)]],
       document: ['', [Validators.required, Validators.minLength(11)]],
       contact: ['', [Validators.required, Validators.minLength(3)]],
-      phone: ['', [Validators.required, Validators.pattern(/^\(\d{2}\) \d{4,5}-\d{4}$/)]],
+      phone: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       address: ['', [Validators.required, Validators.minLength(10)]]
     });

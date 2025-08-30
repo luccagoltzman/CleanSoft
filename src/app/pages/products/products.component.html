@@ -78,53 +78,32 @@
   <div class="filters-section">
     <div class="search-box">
       <i class="fas fa-search"></i>
-      <input 
-        type="text" 
-        placeholder="Buscar por nome, descrição ou SKU..."
-        [(ngModel)]="searchTerm"
-        (input)="onSearchChange()"
-        class="search-input"
-      >
+      <input type="text" placeholder="Buscar por nome, descrição ou SKU..." [(ngModel)]="searchTerm"
+        (input)="onSearchChange()" class="search-input">
     </div>
-    
+
     <div class="filter-controls">
-      <select 
-        [(ngModel)]="categoryFilter" 
-        (change)="onCategoryFilterChange()"
-        class="filter-select"
-      >
+      <select [(ngModel)]="categoryFilter" (change)="onCategoryFilterChange()" class="filter-select">
         <option value="">Todas as Categorias</option>
         <option *ngFor="let category of availableCategories" [value]="category">
           {{ category }}
         </option>
       </select>
-      
-      <select 
-        [(ngModel)]="supplierFilter" 
-        (change)="onSupplierFilterChange()"
-        class="filter-select"
-      >
+
+      <select [(ngModel)]="supplierFilter" (change)="onSupplierFilterChange()" class="filter-select">
         <option value="">Todos os Fornecedores</option>
         <option *ngFor="let supplier of suppliers" [value]="supplier.id">
           {{ supplier.name }}
         </option>
       </select>
-      
-      <select 
-        [(ngModel)]="statusFilter" 
-        (change)="onStatusFilterChange()"
-        class="filter-select"
-      >
+
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilterChange()" class="filter-select">
         <option value="all">Todos os Status</option>
         <option value="active">Ativos</option>
         <option value="inactive">Inativos</option>
       </select>
-      
-      <select 
-        [(ngModel)]="stockFilter" 
-        (change)="onStockFilterChange()"
-        class="filter-select"
-      >
+
+      <select [(ngModel)]="stockFilter" (change)="onStockFilterChange()" class="filter-select">
         <option value="all">Todos os Estoques</option>
         <option value="low">Estoque Baixo</option>
         <option value="out">Sem Estoque</option>
@@ -132,7 +111,7 @@
     </div>
   </div>
 
-   <div class="table-container" *ngIf="isLoading">
+  <div class="table-container" *ngIf="isLoading">
     <app-table-skeleton [headers]="['Cliente', 'Telefone', 'Total', 'Data da Venda', 'Status', 'Método']" [rows]="6"
       [cells]="6">
     </app-table-skeleton>
@@ -196,20 +175,12 @@
               <button class="btn-icon" (click)="editProduct(product)" title="Editar">
                 <i class="fas fa-edit"></i>
               </button>
-              <button 
-                *ngIf="product.isActive"
-                class="btn-icon btn-warning" 
-                (click)="deactivateProduct(product)"
-                title="Desativar"
-              >
+              <button *ngIf="product.isActive" class="btn-icon btn-warning" (click)="deactivateProduct(product)"
+                title="Desativar">
                 <i class="fas fa-times"></i>
               </button>
-              <button 
-                *ngIf="!product.isActive"
-                class="btn-icon btn-success" 
-                (click)="activateProduct(product)"
-                title="Ativar"
-              >
+              <button *ngIf="!product.isActive" class="btn-icon btn-success" (click)="activateProduct(product)"
+                title="Ativar">
                 <i class="fas fa-check"></i>
               </button>
             </div>
@@ -217,17 +188,14 @@
         </tr>
       </tbody>
     </table>
-    
+
     <div *ngIf="filteredProducts.length === 0" class="no-results">
       <i class="fas fa-search"></i>
       <p>Nenhum produto encontrado com os filtros aplicados.</p>
     </div>
 
     <!-- Paginação -->
-    <app-pagination
-      [currentPage]="currentPage"
-      [pageSize]="pageSize"
-      [totalItems]="filteredProducts.length"
+    <app-pagination [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="filteredProducts.length"
       (pageChange)="onPageChange($event)">
     </app-pagination>
   </div>
@@ -241,7 +209,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form [formGroup]="productForm" (ngSubmit)="saveProduct()" class="product-form">
         <div class="form-row">
           <div class="form-group">
@@ -252,55 +220,40 @@
                 {{ category }}
               </option>
             </select>
-            <div *ngIf="productForm.get('category')?.invalid && productForm.get('category')?.touched" class="error-message">
+            <div *ngIf="productForm.get('category')?.invalid && productForm.get('category')?.touched"
+              class="error-message">
               Categoria é obrigatória
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="name">Nome *</label>
-            <input 
-              type="text" 
-              id="name" 
-              formControlName="name" 
-              placeholder="Nome do produto"
-              class="form-input"
-            >
+            <input type="text" id="name" formControlName="name" placeholder="Nome do produto" class="form-input">
             <div *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched" class="error-message">
               Nome é obrigatório e deve ter pelo menos 3 caracteres
             </div>
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="description">Descrição *</label>
-          <textarea 
-            id="description" 
-            formControlName="description" 
-            placeholder="Descrição detalhada do produto"
-            class="form-textarea"
-            rows="3"
-          ></textarea>
-          <div *ngIf="productForm.get('description')?.invalid && productForm.get('description')?.touched" class="error-message">
+          <textarea id="description" formControlName="description" placeholder="Descrição detalhada do produto"
+            class="form-textarea" rows="3"></textarea>
+          <div *ngIf="productForm.get('description')?.invalid && productForm.get('description')?.touched"
+            class="error-message">
             Descrição é obrigatória e deve ter pelo menos 10 caracteres
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="sku">SKU *</label>
-            <input 
-              type="text" 
-              id="sku" 
-              formControlName="sku" 
-              placeholder="Código do produto"
-              class="form-input"
-            >
+            <input type="text" id="sku" formControlName="sku" placeholder="Código do produto" class="form-input">
             <div *ngIf="productForm.get('sku')?.invalid && productForm.get('sku')?.touched" class="error-message">
               SKU é obrigatório e deve ter pelo menos 3 caracteres
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="unit">Unidade *</label>
             <select id="unit" formControlName="unit" class="form-select">
@@ -314,73 +267,50 @@
             </div>
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="costPrice">Preço de Custo *</label>
-            <input 
-              type="number" 
-              id="costPrice" 
-              formControlName="costPrice" 
-              placeholder="0.00"
-              class="form-input"
-              step="0.01"
-              min="0"
-            >
-            <div *ngIf="productForm.get('costPrice')?.invalid && productForm.get('costPrice')?.touched" class="error-message">
+            <input type="number" id="costPrice" formControlName="costPrice" placeholder="0.00" class="form-input"
+              step="0.01" min="0">
+            <div *ngIf="productForm.get('costPrice')?.invalid && productForm.get('costPrice')?.touched"
+              class="error-message">
               Preço de custo é obrigatório e deve ser maior que zero
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="salePrice">Preço de Venda *</label>
-            <input 
-              type="number" 
-              id="salePrice" 
-              formControlName="salePrice" 
-              placeholder="0.00"
-              class="form-input"
-              step="0.01"
-              min="0"
-            >
-            <div *ngIf="productForm.get('salePrice')?.invalid && productForm.get('salePrice')?.touched" class="error-message">
+            <input type="number" id="salePrice" formControlName="salePrice" placeholder="0.00" class="form-input"
+              step="0.01" min="0">
+            <div *ngIf="productForm.get('salePrice')?.invalid && productForm.get('salePrice')?.touched"
+              class="error-message">
               Preço de venda é obrigatório e deve ser maior que zero
             </div>
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="currentStock">Estoque Atual *</label>
-            <input 
-              type="number" 
-              id="currentStock" 
-              formControlName="currentStock" 
-              placeholder="0"
-              class="form-input"
-              min="0"
-            >
-            <div *ngIf="productForm.get('currentStock')?.invalid && productForm.get('currentStock')?.touched" class="error-message">
+            <input type="number" id="currentStock" formControlName="currentStock" placeholder="0" class="form-input"
+              min="0">
+            <div *ngIf="productForm.get('currentStock')?.invalid && productForm.get('currentStock')?.touched"
+              class="error-message">
               Estoque atual é obrigatório e deve ser maior ou igual a zero
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="minStock">Estoque Mínimo *</label>
-            <input 
-              type="number" 
-              id="minStock" 
-              formControlName="minStock" 
-              placeholder="0"
-              class="form-input"
-              min="0"
-            >
-            <div *ngIf="productForm.get('minStock')?.invalid && productForm.get('minStock')?.touched" class="error-message">
+            <input type="number" id="minStock" formControlName="minStock" placeholder="0" class="form-input" min="0">
+            <div *ngIf="productForm.get('minStock')?.invalid && productForm.get('minStock')?.touched"
+              class="error-message">
               Estoque mínimo é obrigatório e deve ser maior ou igual a zero
             </div>
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="supplierId">Fornecedor *</label>
           <select id="supplierId" formControlName="supplierId" class="form-select">
@@ -389,11 +319,12 @@
               {{ supplier.name }}
             </option>
           </select>
-          <div *ngIf="productForm.get('supplierId')?.invalid && productForm.get('supplierId')?.touched" class="error-message">
+          <div *ngIf="productForm.get('supplierId')?.invalid && productForm.get('supplierId')?.touched"
+            class="error-message">
             Fornecedor é obrigatório
           </div>
         </div>
-        
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" (click)="closeForm()">
             Cancelar
@@ -415,96 +346,70 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form [formGroup]="supplierForm" (ngSubmit)="saveSupplier()" class="supplier-form">
         <div class="form-row">
           <div class="form-group">
             <label for="supplierName">Nome *</label>
-            <input 
-              type="text" 
-              id="supplierName" 
-              formControlName="name" 
-              placeholder="Nome da empresa"
-              class="form-input"
-            >
+            <input type="text" id="supplierName" formControlName="name" placeholder="Nome da empresa"
+              class="form-input">
             <div *ngIf="supplierForm.get('name')?.invalid && supplierForm.get('name')?.touched" class="error-message">
               Nome é obrigatório e deve ter pelo menos 3 caracteres
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="document">CPF/CNPJ *</label>
-            <input 
-              type="text" 
-              id="document" 
-              formControlName="document" 
-              placeholder="000.000.000-00 ou 00.000.000/0000-00"
-              class="form-input"
-            >
-            <div *ngIf="supplierForm.get('document')?.invalid && supplierForm.get('document')?.touched" class="error-message">
+            <input type="text" id="document" formControlName="document"
+              placeholder="000.000.000-00 ou 00.000.000/0000-00" class="form-input" mask="000.000.000-00999/0000-00"
+              [dropSpecialCharacters]="true">
+            <div *ngIf="supplierForm.get('document')?.invalid && supplierForm.get('document')?.touched"
+              class="error-message">
               Documento é obrigatório e deve ter pelo menos 11 caracteres
             </div>
           </div>
+
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="contact">Contato *</label>
-            <input 
-              type="text" 
-              id="contact" 
-              formControlName="contact" 
-              placeholder="Nome do contato"
-              class="form-input"
-            >
-            <div *ngIf="supplierForm.get('contact')?.invalid && supplierForm.get('contact')?.touched" class="error-message">
+            <input type="text" id="contact" formControlName="contact" placeholder="Nome do contato" class="form-input">
+            <div *ngIf="supplierForm.get('contact')?.invalid && supplierForm.get('contact')?.touched"
+              class="error-message">
               Contato é obrigatório e deve ter pelo menos 3 caracteres
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="phone">Telefone *</label>
-            <input 
-              type="text" 
-              id="phone" 
-              formControlName="phone" 
-              placeholder="(11) 99999-9999"
-              class="form-input"
-            >
+            <input type="text" id="phone" formControlName="phone" placeholder="(11) 99999-9999" class="form-input"
+              mask="(00) 00000-0000" [dropSpecialCharacters]="true">
             <div *ngIf="supplierForm.get('phone')?.invalid && supplierForm.get('phone')?.touched" class="error-message">
               Telefone é obrigatório no formato (11) 99999-9999
             </div>
           </div>
+
         </div>
-        
+
         <div class="form-group">
           <label for="email">E-mail *</label>
-          <input 
-            type="email" 
-            id="email" 
-            formControlName="email" 
-            placeholder="email@exemplo.com"
-            class="form-input"
-          >
+          <input type="email" id="email" formControlName="email" placeholder="email@exemplo.com" class="form-input">
           <div *ngIf="supplierForm.get('email')?.invalid && supplierForm.get('email')?.touched" class="error-message">
             E-mail é obrigatório e deve ser válido
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="address">Endereço *</label>
-          <textarea 
-            id="address" 
-            formControlName="address" 
-            placeholder="Endereço completo"
-            class="form-textarea"
-            rows="2"
-          ></textarea>
-          <div *ngIf="supplierForm.get('address')?.invalid && supplierForm.get('address')?.touched" class="error-message">
+          <textarea id="address" formControlName="address" placeholder="Endereço completo" class="form-textarea"
+            rows="2"></textarea>
+          <div *ngIf="supplierForm.get('address')?.invalid && supplierForm.get('address')?.touched"
+            class="error-message">
             Endereço é obrigatório e deve ter pelo menos 10 caracteres
           </div>
         </div>
-        
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" (click)="closeSupplierForm()">
             Cancelar
@@ -526,7 +431,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <form [formGroup]="stockMovementForm" (ngSubmit)="saveStockMovement()" class="stock-movement-form">
         <div class="form-row">
           <div class="form-group">
@@ -537,11 +442,12 @@
                 {{ product.name }} ({{ product.sku }})
               </option>
             </select>
-            <div *ngIf="stockMovementForm.get('productId')?.invalid && stockMovementForm.get('productId')?.touched" class="error-message">
+            <div *ngIf="stockMovementForm.get('productId')?.invalid && stockMovementForm.get('productId')?.touched"
+              class="error-message">
               Produto é obrigatório
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="type">Tipo *</label>
             <select id="type" formControlName="type" class="form-select">
@@ -549,45 +455,34 @@
               <option value="entry">Entrada</option>
               <option value="exit">Saída</option>
             </select>
-            <div *ngIf="stockMovementForm.get('type')?.invalid && stockMovementForm.get('type')?.touched" class="error-message">
+            <div *ngIf="stockMovementForm.get('type')?.invalid && stockMovementForm.get('type')?.touched"
+              class="error-message">
               Tipo é obrigatório
             </div>
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="quantity">Quantidade *</label>
-            <input 
-              type="number" 
-              id="quantity" 
-              formControlName="quantity" 
-              placeholder="0"
-              class="form-input"
-              min="1"
-            >
-            <div *ngIf="stockMovementForm.get('quantity')?.invalid && stockMovementForm.get('quantity')?.touched" class="error-message">
+            <input type="number" id="quantity" formControlName="quantity" placeholder="0" class="form-input" min="1">
+            <div *ngIf="stockMovementForm.get('quantity')?.invalid && stockMovementForm.get('quantity')?.touched"
+              class="error-message">
               Quantidade é obrigatória e deve ser maior que zero
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="unitPrice">Preço Unitário *</label>
-            <input 
-              type="number" 
-              id="unitPrice" 
-              formControlName="unitPrice" 
-              placeholder="0.00"
-              class="form-input"
-              step="0.01"
-              min="0"
-            >
-            <div *ngIf="stockMovementForm.get('unitPrice')?.invalid && stockMovementForm.get('unitPrice')?.touched" class="error-message">
+            <input type="number" id="unitPrice" formControlName="unitPrice" placeholder="0.00" class="form-input"
+              step="0.01" min="0">
+            <div *ngIf="stockMovementForm.get('unitPrice')?.invalid && stockMovementForm.get('unitPrice')?.touched"
+              class="error-message">
               Preço unitário é obrigatório e deve ser maior ou igual a zero
             </div>
           </div>
         </div>
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="reason">Motivo *</label>
@@ -597,25 +492,21 @@
                 {{ getReasonText(reason) }}
               </option>
             </select>
-            <div *ngIf="stockMovementForm.get('reason')?.invalid && stockMovementForm.get('reason')?.touched" class="error-message">
+            <div *ngIf="stockMovementForm.get('reason')?.invalid && stockMovementForm.get('reason')?.touched"
+              class="error-message">
               Motivo é obrigatório
             </div>
           </div>
-          
-      
+
+
         </div>
-        
+
         <div class="form-group">
           <label for="notes">Observações</label>
-          <textarea 
-            id="notes" 
-            formControlName="notes" 
-            placeholder="Observações sobre a movimentação"
-            class="form-textarea"
-            rows="2"
-          ></textarea>
+          <textarea id="notes" formControlName="notes" placeholder="Observações sobre a movimentação"
+            class="form-textarea" rows="2"></textarea>
         </div>
-        
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" (click)="closeStockMovementForm()">
             Cancelar
@@ -637,7 +528,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <div class="product-details">
         <div class="detail-row">
           <label>Nome:</label>
@@ -700,7 +591,7 @@
           <span>{{ selectedProduct.updatedAt | date:'dd/MM/yyyy' }}</span>
         </div>
       </div>
-      
+
       <div class="modal-actions">
         <button class="btn-secondary" (click)="selectedProduct = null">
           Fechar
@@ -708,7 +599,7 @@
         <button class="btn-primary" (click)="editProduct(selectedProduct)">
           Editar
         </button>
-       
+
       </div>
     </div>
   </div>

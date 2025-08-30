@@ -51,7 +51,8 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return typeof localStorage !== 'undefined' && !!localStorage.getItem('token');
+    // retorna true se tiver token válido no localStorage
+    return !!localStorage.getItem('token');
   }
 
   getToken(): string | null {

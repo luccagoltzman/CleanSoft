@@ -906,6 +906,7 @@
   font-size: 1rem;
   transition: all 0.3s ease;
   background: white;
+  height: 52px;
 }
 
 .form-input:focus,
