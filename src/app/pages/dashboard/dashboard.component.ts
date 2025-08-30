@@ -200,7 +200,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }) => {
         this.customers = data.customers;
 
-        console.log('Dados carregados:', data); // Debug para ver os dados reais
 
         this.updateStats(data);
         this.updateRecentSales(data.sales);
@@ -300,11 +299,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.initializeSalesChart();
     }
 
-    console.log('Vendas recebidas:', sales); // Debug
 
     // Se não há vendas, cria dados de exemplo para teste
     if (!sales || sales.length === 0) {
-      console.log('Nenhuma venda encontrada, usando dados de exemplo');
       const exampleData = [100, 150, 200, 120, 180, 90, 250, 300, 220, 160, 190, 280];
       if (this.salesChart) {
         this.salesChart.data.datasets[0].data = exampleData;
@@ -326,7 +323,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    console.log('Vendas por mês calculadas:', salesByMonth); // Debug
 
     if (this.salesChart) {
       this.salesChart.data.datasets[0].data = salesByMonth;
@@ -341,11 +337,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.initializeServicesChart();
     }
 
-    console.log('Serviços recebidos:', services); // Debug
 
     // Se não há serviços, cria dados de exemplo para teste
     if (!services || services.length === 0) {
-      console.log('Nenhum serviço encontrado, usando dados de exemplo');
       const exampleData = [5, 8, 3];
       if (this.servicesChart) {
         this.servicesChart.data.datasets[0].data = exampleData;
@@ -362,7 +356,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
 
     services.forEach(service => {
-      console.log('Serviço categoria:', service.category); // Debug
       if (service.category in categoryCounts) {
         categoryCounts[service.category]++;
       } else {
@@ -371,7 +364,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    console.log('Serviços por categoria calculados:', categoryCounts); // Debug
 
     const dataArray = [
       categoryCounts[ServiceCategory.SIMPLE],
@@ -379,7 +371,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       categoryCounts[ServiceCategory.TECHNICAL]
     ];
 
-    console.log('Array de dados para o gráfico:', dataArray); // Debug
 
     if (this.servicesChart) {
       this.servicesChart.data.datasets[0].data = dataArray;
@@ -389,12 +380,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private handleEventClick(info: any) {
     // Aqui você pode implementar a lógica para exibir detalhes do evento
-    console.log('Evento clicado:', info.event);
   }
 
   private handleDateClick(info: any) {
     // Aqui você pode implementar a lógica para adicionar um novo evento
-    console.log('Data clicada:', info.date);
   }
 
   private updateCalendarEvents(services: Service[]) {

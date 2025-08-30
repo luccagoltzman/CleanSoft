@@ -14,10 +14,10 @@ export class ApiService {
   constructor(private http: HttpClient) { }
 
   private getHeaders(): HttpHeaders {
-    // const token = localStorage.getItem('supabase_token');
+    const token = localStorage.getItem('token');
     return new HttpHeaders({
       'apikey': environment.supabaseKey,
-      'Authorization': environment.UserToken ? `Bearer ${environment.UserToken}` : `Bearer ${environment.supabaseKey}`,
+      'Authorization': token? `Bearer ${token}` : `Bearer `,
       'Content-Type': 'application/json'
     });
   }
@@ -78,13 +78,6 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/${table}?${column}=eq.${value}`, { headers: this.getHeaders() });
   }
 
-  signUp(email: string, password: string): Observable<any> {
-    return this.http.post(
-      `${this.authUrl}/signup`,
-      { email, password },
-      { headers: this.getHeaders() }
-    );
-  }
 
   queryAggregate(
     table: string,
@@ -116,23 +109,4 @@ export class ApiService {
   }
 
 
-
-
-  signIn(email: string, password: string): Observable<any> {
-    return this.http.post(
-      `${this.authUrl}/token?grant_type=password`,
-      { email, password },
-      { headers: this.getHeaders() }
-    ).pipe(
-      tap((res: any) => {
-        if (res?.access_token) {
-          // localStorage.setItem('supabase_token', res.access_token);
-        }
-      })
-    );
-  }
-
-  signOut(): void {
-    // localStorage.removeItem('supabase_token');
-  }
 }

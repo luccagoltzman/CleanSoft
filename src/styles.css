@@ -18,6 +18,7 @@
 /* Variáveis CSS legadas para compatibilidade */
 :root {
   --primary-color: #1976d2;
+  --privary-hover-color: #2f70b1;
   --secondary-color: #424242;
   --accent-color: #ff4081;
   --success-color: #4caf50;
@@ -28,7 +29,7 @@
   --background-light: #fafafa;
   --background-dark: #303030;
   --border-color: #e0e0e0;
-  --shadow: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Utilitários legados */
@@ -59,7 +60,7 @@
 
 .btn-primary:hover {
   background-color: #1565c0;
-    transform: scale(1.05);
+  transform: scale(1.05);
 
 }
 
@@ -83,13 +84,13 @@
   .container {
     padding: 0 10px;
   }
-  
+
   .card {
     padding: 15px;
   }
 }
 
-select{
+select {
   cursor: pointer;
 
 }

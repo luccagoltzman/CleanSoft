@@ -377,7 +377,19 @@ export class ReportsComponent implements OnInit, OnDestroy {
     console.log('Filtered Services:', filteredServices);
     // Total Services
     const totalServices = filteredServices.length;
-    const totalRevenue = filteredServices.reduce((sum, s) => sum + s.basePrice, 0);
+    const totalRevenue = filteredServices
+      .filter(s => s.paymentStatus === 'paid')
+      .reduce((sum, s) => {
+        const addonsRevenue = s.services_with_addons?.reduce(
+          (a: any, b: { serviceIdOddons: { additionalPrice: any; }; }) => a + (b.serviceIdOddons?.additionalPrice || 0),
+          0
+        ) || 0;
+        return sum + (s.basePrice || 0) + addonsRevenue;
+      }, 0);
+
+
+    console.log('Total Services:', totalServices);
+    console.log('Total Revenue:', totalRevenue);
     const averageTicket = totalServices ? totalRevenue / totalServices : 0;
 
     // Top Services
